@@ -7670,23 +7670,35 @@ function printReport() {
                     }
                 }
 
-                // ปรับแต่งปุ่มบันทึก
-                const saveBtn = document.querySelector('.btn-primary[onclick="saveNCR()"]');
-                if (saveBtn) {
-                    saveBtn.innerHTML = '💾 ส่งข้อมูลตอบกลับ';
-                    saveBtn.onclick = async function(e) {
-                        e.preventDefault();
+                // สร้างปุ่มบันทึกใหม่ต่อท้ายฟอร์ม
+                if (!document.getElementById('reply-save-btn')) {
+                    const formPage = document.getElementById('page-new-ncr');
+                    const btnDiv = document.createElement('div');
+                    btnDiv.style.cssText = 'padding:20px 0 40px 0;display:flex;gap:12px;align-items:center;';
+                    btnDiv.innerHTML = `
+                        <button id="reply-save-btn" style="
+                            background:#e84393;color:#fff;border:none;
+                            padding:14px 32px;border-radius:8px;
+                            font-size:1rem;font-weight:700;cursor:pointer;
+                            font-family:Sarabun,sans-serif;
+                        ">💾 ส่งข้อมูลตอบกลับ</button>
+                        <span id="reply-ok" style="color:#4caf50;display:none;font-size:.9rem">✅ ส่งเรียบร้อยแล้ว</span>
+                    `;
+                    formPage.appendChild(btnDiv);
+
+                    document.getElementById('reply-save-btn').onclick = async function() {
                         const rootCause = document.getElementById('root-cause').value;
-                        if (!rootCause) { alert('กรุณาระบุสาเหตุของปัญหา'); return; }
-                        
+                        if (!rootCause) { alert('กรุณาระบุสาเหตุของปัญหา (Root Cause)'); return; }
                         const idx = ncrList.findIndex(n => n.id === ncrId);
+                        if (idx === -1) { alert('ไม่พบข้อมูล NCR'); return; }
                         ncrList[idx].rootCause = rootCause;
                         ncrList[idx].status = 'waiting-audit';
                         ncrList[idx].updatedAt = new Date().toISOString();
-                        
                         await saveData();
+                        document.getElementById('reply-save-btn').disabled = true;
+                        document.getElementById('reply-save-btn').textContent = '✅ ส่งแล้ว';
+                        document.getElementById('reply-ok').style.display = 'inline';
                         alert('ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ');
-                        window.location.reload();
                     };
                 }
             } else {
