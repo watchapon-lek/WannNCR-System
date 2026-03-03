@@ -7756,23 +7756,33 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
                     }
                 }
 
-                // ปรับแต่งปุ่มบันทึก
-                const saveBtn = document.querySelector('.btn-primary[onclick="saveNCR()"]');
-                if (saveBtn) {
-                    saveBtn.innerHTML = '💾 ส่งข้อมูลตอบกลับ';
-                    saveBtn.onclick = function(e) {
-                        e.preventDefault();
+                // สร้างปุ่มบันทึกใหม่สำหรับ reply mode
+                if (!document.getElementById('reply-save-btn')) {
+                    const replyBtnRow = document.createElement('div');
+                    replyBtnRow.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:32px;padding:0 0 8px 0;';
+                    replyBtnRow.innerHTML = `
+                        <button id="reply-save-btn" class="btn btn-primary" style="font-size:1rem;padding:12px 28px;">
+                            💾 ส่งข้อมูลตอบกลับ
+                        </button>
+                        <span id="reply-save-ok" style="color:var(--success);font-size:.9rem;display:none">✅ ส่งเรียบร้อยแล้ว</span>
+                    `;
+                    formPage.appendChild(replyBtnRow);
+
+                    document.getElementById('reply-save-btn').onclick = function() {
                         const rootCause = document.getElementById('root-cause').value;
-                        if (!rootCause) { alert('กรุณาระบุสาเหตุของปัญหา'); return; }
+                        if (!rootCause) { alert('กรุณาระบุสาเหตุของปัญหา (Root Cause)'); return; }
                         
                         const idx = ncrList.findIndex(n => n.id === ncrId);
+                        if (idx === -1) { alert('ไม่พบข้อมูล NCR'); return; }
                         ncrList[idx].rootCause = rootCause;
                         ncrList[idx].status = 'waiting-audit';
                         ncrList[idx].updatedAt = new Date().toISOString();
                         
                         saveData();
-                        alert('ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ');
-                        window.location.reload();
+                        document.getElementById('reply-save-btn').disabled = true;
+                        document.getElementById('reply-save-btn').innerHTML = '✅ ส่งแล้ว';
+                        document.getElementById('reply-save-ok').style.display = 'inline';
+                        setTimeout(() => alert('ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ'), 100);
                     };
                 }
             } else {
