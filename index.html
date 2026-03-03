@@ -7376,7 +7376,7 @@ async function addProductCode() {
   }
 }
 
-function removeCode(i) {
+async function removeCode(i) {
   settings.productCodes.splice(i,1);
   await saveData(); renderSettings(); showSaveAlert();
 }
@@ -7587,7 +7587,7 @@ async function addProductCode() {
   }
 }
 
-function removeCode(i) {
+async function removeCode(i) {
   settings.productCodes.splice(i,1);
   await saveData(); renderSettings(); showSaveAlert();
 }
