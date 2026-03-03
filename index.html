@@ -7526,120 +7526,6 @@ function printReport() {
   win.document.close();
 }
 
-// ==================== SETTINGS ====================
-function renderSettings() {
-  populateSelects();
-  // Reporters
-  document.getElementById('reporters-list').innerHTML = settings.reporters.map((r,i) =>
-    `<div class="tag">${r}<span class="del-tag" onclick="removePerson('reporters',${i})">✕</span></div>`).join('');
-  // Reviewers
-  document.getElementById('reviewers-list').innerHTML = settings.reviewers.map((r,i) =>
-    `<div class="tag">${r}<span class="del-tag" onclick="removePerson('reviewers',${i})">✕</span></div>`).join('');
-  // Depts
-  document.getElementById('depts-list').innerHTML = settings.depts.map((d,i) =>
-    `<div class="tag">${d}<span class="del-tag" onclick="removeDept(${i})">✕</span></div>`).join('');
-  // Codes
-  document.getElementById('codes-list').innerHTML = settings.productCodes.map((p,i) =>
-    `<div class="tag"><span style="font-family:monospace;color:var(--accent3)">${p.code}</span>&nbsp;${p.desc?`<span style="color:var(--text-muted)">${p.desc}</span>`:''}<span class="del-tag" onclick="removeCode(${i})">✕</span></div>`).join('');
-}
-
-async function addPerson(type, inputId) {
-  const val = document.getElementById(inputId).value.trim();
-  if (!val) return;
-  if (!settings[type].includes(val)) {
-    settings[type].push(val);
-    await saveData();
-    document.getElementById(inputId).value = '';
-    renderSettings();
-    showSaveAlert();
-  }
-}
-
-async function removePerson(type, i) {
-  settings[type].splice(i, 1);
-  await saveData(); renderSettings(); showSaveAlert();
-}
-
-async function addDept() {
-  const val = document.getElementById('add-dept').value.trim();
-  if (!val || settings.depts.includes(val)) return;
-  settings.depts.push(val);
-  await saveData(); document.getElementById('add-dept').value = '';
-  renderSettings(); showSaveAlert();
-}
-
-async function removeDept(i) {
-  settings.depts.splice(i,1);
-  await saveData(); renderSettings(); showSaveAlert();
-}
-
-async function addProductCode() {
-  const code = document.getElementById('add-code').value.trim();
-  const desc = document.getElementById('add-code-desc').value.trim();
-  if (!code) return;
-  if (!settings.productCodes.find(p=>p.code===code)) {
-    settings.productCodes.push({code, desc});
-    await saveData();
-    document.getElementById('add-code').value = '';
-    document.getElementById('add-code-desc').value = '';
-    renderSettings(); showSaveAlert();
-    setupProductAutocomplete();
-  }
-}
-
-async function removeCode(i) {
-  settings.productCodes.splice(i,1);
-  await saveData(); renderSettings(); showSaveAlert();
-}
-
-function showSaveAlert() {
-  const el = document.getElementById('save-alert');
-  el.style.display = 'block';
-  setTimeout(() => el.style.display = 'none', 2500);
-}
-
-// ==================== EXPORT ====================
-function exportCSV() {
-  const headers = ['เลขที่เอกสาร','วันที่','บริษัท/หน่วยงาน','แผนก','รหัสสินค้า','เรื่อง','รายละเอียด','สาเหตุ','ผู้รายงาน','ผู้ทบทวน','สถานะ','หมายเหตุ'];
-  const rows = ncrList.map(n => [n.id,n.date,n.bp,n.dept,n.productCode,n.subject,n.defectDetail,n.rootCause,n.reporter,n.reviewer,n.status,n.remark].map(v=>`"${(v||'').replace(/"/g,'""')}"`));
-  const csv = '\uFEFF' + [headers.join(','), ...rows.map(r=>r.join(','))].join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `NCR_Export_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-}
-
-// ==================== UI HELPERS ====================
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  const tabMap = {'dashboard':0,'new-ncr':1,'ncr-list':2,'settings':3};
-  document.querySelectorAll('.nav-tab')[tabMap[name]]?.classList.add('active');
-  if (name === 'ncr-list') { renderList(); populateSelects(); }
-  if (name === 'dashboard') updateDashboard();
-  if (name === 'settings') renderSettings();
-  if (name === 'new-ncr' && editingIndex < 0) { generateDocNumber(); populateSelects(); }
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.remove('show');
-}
-
-function showAlert(msg) {
-  const el = document.createElement('div');
-  el.className = 'alert alert-success';
-  el.style.cssText = 'position:fixed;top:80px;right:24px;z-index:9999;min-width:280px;box-shadow:0 4px 20px rgba(0,0,0,.4)';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-
-// Close modal on overlay click
-document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => { if(e.target===o) o.classList.remove('show'); });
-});
 </script>
 
 <script>
@@ -7740,7 +7626,7 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
         `;
         document.head.appendChild(replyStyle);
 
-        function initReplyMode() {
+        async function initReplyMode() {
             const ncr = ncrList.find(n => n.id === ncrId);
             if (ncr) {
                 // แสดงหน้าฟอร์ม
