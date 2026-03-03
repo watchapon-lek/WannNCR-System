@@ -6315,7 +6315,7 @@ const BP_NAMES = [
 ];
 
 // ==================== INIT ====================
-window.onload = function() {
+window.onload = async function() {
   await loadData();
   document.getElementById('fb-loading').style.display = 'none';
   initForm();
@@ -7784,7 +7784,7 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
                 const saveBtn = document.querySelector('.btn-primary[onclick="saveNCR()"]');
                 if (saveBtn) {
                     saveBtn.innerHTML = '💾 ส่งข้อมูลตอบกลับ';
-                    saveBtn.onclick = function(e) {
+                    saveBtn.onclick = async function(e) {
                         e.preventDefault();
                         const rootCause = document.getElementById('root-cause').value;
                         if (!rootCause) { alert('กรุณาระบุสาเหตุของปัญหา'); return; }
