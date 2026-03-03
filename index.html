@@ -6316,7 +6316,8 @@ const BP_NAMES = [
 
 // ==================== INIT ====================
 window.onload = function() {
-  loadData();
+  await loadData();
+  document.getElementById('fb-loading').style.display = 'none';
   initForm();
   renderSettings();
   renderList();
@@ -6325,18 +6326,41 @@ window.onload = function() {
   setupProductAutocomplete();
 };
 
-function loadData() {
+const FB_URL = 'https://wannncr-default-rtdb.firebaseio.com';
+
+async function loadData() {
   try {
-    const s = localStorage.getItem('ncr_settings');
-    if (s) settings = JSON.parse(s);
-    const n = localStorage.getItem('ncr_list');
-    if (n) ncrList = JSON.parse(n);
-  } catch(e) {}
+    const [sRes, nRes] = await Promise.all([
+      fetch(FB_URL + '/settings.json'),
+      fetch(FB_URL + '/ncrList.json')
+    ]);
+    const s = await sRes.json();
+    const n = await nRes.json();
+    if (s) settings = s;
+    if (n) ncrList = Array.isArray(n) ? n : Object.values(n);
+  } catch(e) {
+    console.error('Firebase loadData error:', e);
+  }
 }
 
-function saveData() {
-  localStorage.setItem('ncr_settings', JSON.stringify(settings));
-  localStorage.setItem('ncr_list', JSON.stringify(ncrList));
+async function saveData() {
+  try {
+    await Promise.all([
+      fetch(FB_URL + '/settings.json', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(settings)
+      }),
+      fetch(FB_URL + '/ncrList.json', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(ncrList)
+      })
+    ]);
+  } catch(e) {
+    console.error('Firebase saveData error:', e);
+    alert('บันทึกข้อมูลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ');
+  }
 }
 
 function initForm() {
@@ -6513,7 +6537,7 @@ function removeImg(i) {
 }
 
 // ==================== SAVE NCR ====================
-function saveNCR() {
+async function saveNCR() {
   const docNum = document.getElementById('doc-number').value;
   const bp = document.getElementById('bp-input').value.trim();
   const defect = document.getElementById('defect-detail').value.trim();
@@ -6558,7 +6582,7 @@ function saveNCR() {
     ncrList.push(ncr);
   }
 
-  saveData();
+  await saveData();
   clearForm();
   updateDashboard();
   renderList();
@@ -6724,7 +6748,7 @@ function viewNCR(idx) {
   document.getElementById('view-modal').classList.add('show');
 }
 
-function saveSupplierReply(idx) {
+async function saveSupplierReply(idx) {
   const replyDate = document.getElementById('modal-supplier-date').value;
   const replyText = document.getElementById('modal-supplier-reply').value;
   const replyCA = document.getElementById('modal-supplier-ca').value;
@@ -6736,7 +6760,7 @@ function saveSupplierReply(idx) {
   if (ncrList[idx].status === 'waiting-reply' && (replyText || replyCA)) {
     ncrList[idx].status = 'waiting-audit';
   }
-  saveData();
+  await saveData();
   updateDashboard();
   renderList();
   const ok = document.getElementById('supplier-save-ok');
@@ -6744,9 +6768,9 @@ function saveSupplierReply(idx) {
   showAlert('✅ บันทึกการตอบกลับจาก Supplier แล้ว');
 }
 
-function quickStatus(idx, status) {
+async function quickStatus(idx, status) {
   ncrList[idx].status = status;
-  saveData();
+  await saveData();
   updateDashboard();
   renderList();
   viewNCR(idx);
@@ -6789,10 +6813,10 @@ function editNCR(idx) {
   }, 100);
 }
 
-function deleteNCR(idx) {
+async function deleteNCR(idx) {
   if (!confirm(`ลบ NCR: ${ncrList[idx].id} ?`)) return;
   ncrList.splice(idx, 1);
-  saveData();
+  await saveData();
   renderList();
   updateDashboard();
 }
@@ -7308,43 +7332,43 @@ function renderSettings() {
     `<div class="tag"><span style="font-family:monospace;color:var(--accent3)">${p.code}</span>&nbsp;${p.desc?`<span style="color:var(--text-muted)">${p.desc}</span>`:''}<span class="del-tag" onclick="removeCode(${i})">✕</span></div>`).join('');
 }
 
-function addPerson(type, inputId) {
+async function addPerson(type, inputId) {
   const val = document.getElementById(inputId).value.trim();
   if (!val) return;
   if (!settings[type].includes(val)) {
     settings[type].push(val);
-    saveData();
+    await saveData();
     document.getElementById(inputId).value = '';
     renderSettings();
     showSaveAlert();
   }
 }
 
-function removePerson(type, i) {
+async function removePerson(type, i) {
   settings[type].splice(i, 1);
-  saveData(); renderSettings(); showSaveAlert();
+  await saveData(); renderSettings(); showSaveAlert();
 }
 
-function addDept() {
+async function addDept() {
   const val = document.getElementById('add-dept').value.trim();
   if (!val || settings.depts.includes(val)) return;
   settings.depts.push(val);
-  saveData(); document.getElementById('add-dept').value = '';
+  await saveData(); document.getElementById('add-dept').value = '';
   renderSettings(); showSaveAlert();
 }
 
-function removeDept(i) {
+async function removeDept(i) {
   settings.depts.splice(i,1);
-  saveData(); renderSettings(); showSaveAlert();
+  await saveData(); renderSettings(); showSaveAlert();
 }
 
-function addProductCode() {
+async function addProductCode() {
   const code = document.getElementById('add-code').value.trim();
   const desc = document.getElementById('add-code-desc').value.trim();
   if (!code) return;
   if (!settings.productCodes.find(p=>p.code===code)) {
     settings.productCodes.push({code, desc});
-    saveData();
+    await saveData();
     document.getElementById('add-code').value = '';
     document.getElementById('add-code-desc').value = '';
     renderSettings(); showSaveAlert();
@@ -7354,7 +7378,7 @@ function addProductCode() {
 
 function removeCode(i) {
   settings.productCodes.splice(i,1);
-  saveData(); renderSettings(); showSaveAlert();
+  await saveData(); renderSettings(); showSaveAlert();
 }
 
 function showSaveAlert() {
@@ -7519,43 +7543,43 @@ function renderSettings() {
     `<div class="tag"><span style="font-family:monospace;color:var(--accent3)">${p.code}</span>&nbsp;${p.desc?`<span style="color:var(--text-muted)">${p.desc}</span>`:''}<span class="del-tag" onclick="removeCode(${i})">✕</span></div>`).join('');
 }
 
-function addPerson(type, inputId) {
+async function addPerson(type, inputId) {
   const val = document.getElementById(inputId).value.trim();
   if (!val) return;
   if (!settings[type].includes(val)) {
     settings[type].push(val);
-    saveData();
+    await saveData();
     document.getElementById(inputId).value = '';
     renderSettings();
     showSaveAlert();
   }
 }
 
-function removePerson(type, i) {
+async function removePerson(type, i) {
   settings[type].splice(i, 1);
-  saveData(); renderSettings(); showSaveAlert();
+  await saveData(); renderSettings(); showSaveAlert();
 }
 
-function addDept() {
+async function addDept() {
   const val = document.getElementById('add-dept').value.trim();
   if (!val || settings.depts.includes(val)) return;
   settings.depts.push(val);
-  saveData(); document.getElementById('add-dept').value = '';
+  await saveData(); document.getElementById('add-dept').value = '';
   renderSettings(); showSaveAlert();
 }
 
-function removeDept(i) {
+async function removeDept(i) {
   settings.depts.splice(i,1);
-  saveData(); renderSettings(); showSaveAlert();
+  await saveData(); renderSettings(); showSaveAlert();
 }
 
-function addProductCode() {
+async function addProductCode() {
   const code = document.getElementById('add-code').value.trim();
   const desc = document.getElementById('add-code-desc').value.trim();
   if (!code) return;
   if (!settings.productCodes.find(p=>p.code===code)) {
     settings.productCodes.push({code, desc});
-    saveData();
+    await saveData();
     document.getElementById('add-code').value = '';
     document.getElementById('add-code-desc').value = '';
     renderSettings(); showSaveAlert();
@@ -7565,7 +7589,7 @@ function addProductCode() {
 
 function removeCode(i) {
   settings.productCodes.splice(i,1);
-  saveData(); renderSettings(); showSaveAlert();
+  await saveData(); renderSettings(); showSaveAlert();
 }
 
 function showSaveAlert() {
@@ -7756,33 +7780,23 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
                     }
                 }
 
-                // สร้างปุ่มบันทึกใหม่สำหรับ reply mode
-                if (!document.getElementById('reply-save-btn')) {
-                    const replyBtnRow = document.createElement('div');
-                    replyBtnRow.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:32px;padding:0 0 8px 0;';
-                    replyBtnRow.innerHTML = `
-                        <button id="reply-save-btn" class="btn btn-primary" style="font-size:1rem;padding:12px 28px;">
-                            💾 ส่งข้อมูลตอบกลับ
-                        </button>
-                        <span id="reply-save-ok" style="color:var(--success);font-size:.9rem;display:none">✅ ส่งเรียบร้อยแล้ว</span>
-                    `;
-                    formPage.appendChild(replyBtnRow);
-
-                    document.getElementById('reply-save-btn').onclick = function() {
+                // ปรับแต่งปุ่มบันทึก
+                const saveBtn = document.querySelector('.btn-primary[onclick="saveNCR()"]');
+                if (saveBtn) {
+                    saveBtn.innerHTML = '💾 ส่งข้อมูลตอบกลับ';
+                    saveBtn.onclick = function(e) {
+                        e.preventDefault();
                         const rootCause = document.getElementById('root-cause').value;
-                        if (!rootCause) { alert('กรุณาระบุสาเหตุของปัญหา (Root Cause)'); return; }
+                        if (!rootCause) { alert('กรุณาระบุสาเหตุของปัญหา'); return; }
                         
                         const idx = ncrList.findIndex(n => n.id === ncrId);
-                        if (idx === -1) { alert('ไม่พบข้อมูล NCR'); return; }
                         ncrList[idx].rootCause = rootCause;
                         ncrList[idx].status = 'waiting-audit';
                         ncrList[idx].updatedAt = new Date().toISOString();
                         
-                        saveData();
-                        document.getElementById('reply-save-btn').disabled = true;
-                        document.getElementById('reply-save-btn').innerHTML = '✅ ส่งแล้ว';
-                        document.getElementById('reply-save-ok').style.display = 'inline';
-                        setTimeout(() => alert('ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ'), 100);
+                        await saveData();
+                        alert('ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ');
+                        window.location.reload();
                     };
                 }
             } else {
@@ -7851,5 +7865,13 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 
 })();
 
-</script></body>
+</script>
+  <!-- Firebase Loading Overlay -->
+  <div id="fb-loading" style="position:fixed;inset:0;background:rgba(15,17,23,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+    <div style="font-size:2.5rem">🔥</div>
+    <div style="color:#4fc3f7;font-size:1.1rem;font-weight:600">กำลังโหลดข้อมูล...</div>
+    <div style="color:#7b82a0;font-size:.85rem">กำลังเชื่อมต่อ Firebase</div>
+  </div>
+
+</body>
 </html>
