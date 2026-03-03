@@ -6336,10 +6336,14 @@ async function loadData() {
     ]);
     const s = await sRes.json();
     const n = await nRes.json();
-    if (s) settings = s;
-    if (n) ncrList = Array.isArray(n) ? n : Object.values(n);
+    // ถ้ามีข้อมูลใน Firebase ให้ใช้ ถ้าไม่มีให้ใช้ค่า default
+    if (s && typeof s === 'object' && !Array.isArray(s)) settings = Object.assign({}, settings, s);
+    if (n && n !== null) ncrList = Array.isArray(n) ? n : Object.values(n);
+    // กรองค่า null ออก
+    ncrList = ncrList.filter(x => x !== null && x !== undefined);
   } catch(e) {
     console.error('Firebase loadData error:', e);
+    // ถ้าโหลดไม่ได้ ให้ใช้ค่า default เดิม
   }
 }
 
