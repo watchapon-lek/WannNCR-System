@@ -425,10 +425,10 @@
     <div class="form-title-badge">NCR</div>
   </div>
 
-  <!-- Section 1: Header Info -->
+  <!-- Section 1: Header Info (Excel Row 1-2: เลขที่เอกสาร / วันที่) -->
   <div class="card">
     <div class="section-label">ข้อมูลเอกสาร</div>
-    <div class="form-grid form-grid-3">
+    <div class="form-grid form-grid-2">
       <div class="form-group">
         <label>เลขที่เอกสาร <span class="req">*</span></label>
         <input type="text" id="doc-number" placeholder="เช่น NCR022/26">
@@ -438,23 +438,28 @@
         <label>วันที่ออกเอกสาร</label>
         <input type="date" id="doc-date">
       </div>
-      <div class="form-group">
-        <label>ประเภทของไม่เป็นไปตามข้อกำหนด</label>
-        <select id="nc-type">
-          <option value="">-- เลือกประเภท --</option>
-          <option>วัตถุดิบ</option>
-          <option>บรรจุภัณฑ์</option>
-          <option>เครื่องสำอางรอบรรจุ</option>
-          <option>สินค้าสำเร็จรูป</option>
-          <option>กระบวนการผลิต</option>
-          <option>บริการ</option>
-          <option>อื่นๆ</option>
-        </select>
-      </div>
     </div>
   </div>
 
-  <!-- Section 2: To / Subject -->
+  <!-- Section 2: NC Type (Excel Row 4-5: สิ่งที่ไม่เป็นไปตามข้อกำหนด) -->
+  <div class="card">
+    <div class="section-label">สิ่งที่ไม่เป็นไปตามข้อกำหนด</div>
+    <div class="form-group">
+      <label>ประเภทของไม่เป็นไปตามข้อกำหนด</label>
+      <select id="nc-type">
+        <option value="">-- เลือกประเภท --</option>
+        <option>วัตถุดิบ</option>
+        <option>บรรจุภัณฑ์</option>
+        <option>เครื่องสำอางรอบรรจุ</option>
+        <option>สินค้าสำเร็จรูป</option>
+        <option>กระบวนการผลิต</option>
+        <option>บริการ</option>
+        <option>อื่นๆ</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Section 3: To / Subject (Excel Row 7-10: เรียน / บริษัท / เรื่อง / ชื่อ / รหัส / อ้างอิง) -->
   <div class="card">
     <div class="section-label">ผู้รับและเรื่อง</div>
     <div class="form-grid form-grid-2">
@@ -497,23 +502,43 @@
     </div>
   </div>
 
-  <!-- Section 3: Non-conformance details -->
+  <!-- Section 4: Non-conformance details (Excel Row 12-13: รายละเอียดข้อบกพร่อง) -->
   <div class="card">
     <div class="section-label">รายละเอียดข้อบกพร่อง</div>
-    <div class="form-group" style="margin-bottom:16px">
+    <div class="form-group">
       <label>รายละเอียดข้อบกพร่องที่ไม่เป็นไปตามข้อกำหนด <span class="req">*</span></label>
       <textarea id="defect-detail" rows="4" placeholder="อธิบายรายละเอียดของสิ่งที่ไม่เป็นไปตามข้อกำหนด..."></textarea>
     </div>
+  </div>
+
+  <!-- Section 5: Reporter / Reviewer (Excel Row 18-20: ผู้รายงาน / ผู้ทบทวน) -->
+  <div class="card">
+    <div class="section-label">ผู้รายงานและผู้ทบทวน</div>
+    <div class="form-grid form-grid-2">
+      <div class="form-group">
+        <label>ผู้รายงาน</label>
+        <select id="reporter-select"></select>
+      </div>
+      <div class="form-group">
+        <label>ผู้ทบทวน / ยอมรับการแก้ไขและปิด NCR</label>
+        <select id="reviewer-select"></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 6: Root Cause / Corrective / Preventive (Excel Row 22-23: การหาสาเหตุ) -->
+  <div class="card">
+    <div class="section-label">การหาสาเหตุ / แก้ไข / ป้องกัน (Root Cause / Corrective &amp; Preventive Action)</div>
     <div class="form-group">
       <label>สาเหตุของปัญหา</label>
       <textarea id="root-cause" rows="3" placeholder="ระบุสาเหตุของปัญหา..."></textarea>
     </div>
   </div>
 
-  <!-- Section 4: Corrective Action -->
+  <!-- Section 7: Corrective Action checkboxes (Excel Row 28-29: รายละเอียดการแก้ไข) -->
   <div class="card">
-    <div class="section-label">การดำเนินการแก้ไข</div>
-    <div class="form-group" style="margin-bottom:16px">
+    <div class="section-label">รายละเอียดการแก้ไข</div>
+    <div class="form-group">
       <label>ประเภทการดำเนินการ</label>
       <div class="checkbox-group" style="flex-wrap:wrap;gap:20px">
         <label class="checkbox-item">
@@ -539,6 +564,20 @@
         <input type="text" id="action-other-text" placeholder="ระบุ..." style="max-width:200px;display:none">
       </div>
     </div>
+  </div>
+
+  <!-- Section 8: Preventive details (Excel Row 33: รายละเอียดการป้องกัน) -->
+  <div class="card">
+    <div class="section-label">รายละเอียดการป้องกัน</div>
+    <div class="form-group">
+      <label>การตรวจติดตามผลการแก้ไข และการป้องกัน</label>
+      <textarea id="audit-result" rows="3" placeholder="บันทึกผลการตรวจติดตาม..."></textarea>
+    </div>
+  </div>
+
+  <!-- Section 9: Timeline / Responsible (Excel Row 38-40: ระยะเวลา / ผู้รับผิดชอบ) -->
+  <div class="card">
+    <div class="section-label">ระยะเวลาดำเนินการและผู้รับผิดชอบ</div>
     <div class="form-grid form-grid-3">
       <div class="form-group">
         <label>วันที่จะเริ่มดำเนินการ</label>
@@ -553,34 +592,20 @@
         <input type="date" id="audit-date">
       </div>
     </div>
-    <div class="form-group" style="margin-top:16px">
-      <label>การตรวจติดตามผลการแก้ไข และการป้องกัน</label>
-      <textarea id="audit-result" rows="3" placeholder="บันทึกผลการตรวจติดตาม..."></textarea>
+  </div>
+
+  <!-- Section 10: Auditor (Excel Row 42-48: การตรวจติดตาม / ผู้ตรวจ) -->
+  <div class="card">
+    <div class="section-label">การตรวจติดตามผลการแก้ไข และการป้องกัน</div>
+    <div class="form-group">
+      <label>ผู้ตรวจ</label>
+      <select id="auditor-select"></select>
     </div>
   </div>
 
-  <!-- Section 5: People -->
+  <!-- Section 11: NCR Close / Status (Excel Row 51-53: สรุปการปิด NCR) -->
   <div class="card">
-    <div class="section-label">ผู้รับผิดชอบ</div>
-    <div class="form-grid form-grid-3">
-      <div class="form-group">
-        <label>ผู้รายงาน</label>
-        <select id="reporter-select"></select>
-      </div>
-      <div class="form-group">
-        <label>ผู้ทบทวน / ยอมรับการแก้ไขและปิด NCR</label>
-        <select id="reviewer-select"></select>
-      </div>
-      <div class="form-group">
-        <label>ผู้ตรวจ</label>
-        <select id="auditor-select"></select>
-      </div>
-    </div>
-  </div>
-
-  <!-- Section 6: Status & Note -->
-  <div class="card">
-    <div class="section-label">สถานะและหมายเหตุ</div>
+    <div class="section-label">สรุปการปิด NCR และสถานะ</div>
     <div class="form-grid form-grid-2">
       <div class="form-group">
         <label>สถานะ NCR <span class="req">*</span></label>
@@ -598,7 +623,7 @@
     </div>
   </div>
 
-  <!-- Section 7: Images -->
+  <!-- Section 12: Images -->
   <div class="card">
     <div class="section-label">รูปภาพประกอบ</div>
     <div class="img-upload-area" id="upload-area" onclick="document.getElementById('img-input').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
