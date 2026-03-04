@@ -7047,7 +7047,7 @@ function buildNCRFormHTML(n) {
     <tr>
       <td style="width:12%;border:1px solid #333;border-top:none;padding:5px 10px;font-weight:700;vertical-align:top">สาเหตุของปัญหา</td>
       <td style="border:1px solid #333;border-top:none;border-left:none;padding:5px 10px">
-        <div style="min-height:22px;white-space:pre-wrap">${line(n.rootCause)}</div>
+        <div style="min-height:22px;white-space:pre-wrap">${line(n.rootCause || n.supplierReply)}</div>
       </td>
     </tr>
     <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
@@ -7069,7 +7069,7 @@ function buildNCRFormHTML(n) {
         </div>
       </td>
     </tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
+    ${n.supplierReply ? `<tr><td style="width:12%;border:1px solid #333;border-top:none;padding:5px 10px;font-weight:700;vertical-align:top;font-size:11px">Supplier<br>ตอบกลับ</td><td style="border:1px solid #333;border-top:none;border-left:none;padding:5px 10px"><div style="min-height:22px;white-space:pre-wrap;font-size:12px">${line(n.supplierReply)}</div></td></tr>` : `<tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>`}
     <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
     <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
   </table>
@@ -7079,7 +7079,7 @@ function buildNCRFormHTML(n) {
     <tr>
       <td colspan="2" style="border:1px solid #333;border-top:none;padding:5px 10px;font-weight:700">รายละเอียดการป้องกัน</td>
     </tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
+    ${n.supplierCA ? `<tr><td style="width:12%;border:1px solid #333;border-top:none;padding:5px 10px;font-weight:700;vertical-align:top;font-size:11px">Corrective<br>Action</td><td style="border:1px solid #333;border-top:none;border-left:none;padding:5px 10px"><div style="min-height:22px;white-space:pre-wrap;font-size:12px">${line(n.supplierCA)}</div></td></tr>` : `<tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>`}
     <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
     <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
     <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
@@ -7308,7 +7308,7 @@ function printReport() {
     </div>
     <div class="section">
       <div class="section-title">สาเหตุของปัญหา</div>
-      <p style="white-space:pre-wrap">${n.rootCause||'-'}</p>
+      <p style="white-space:pre-wrap">${n.rootCause || n.supplierReply || '-'}</p>
     </div>
     <div class="section">
       <div class="section-title">การดำเนินการแก้ไข</div>
@@ -7519,7 +7519,7 @@ function printReport() {
     </div>
     <div class="section">
       <div class="section-title">สาเหตุของปัญหา</div>
-      <p style="white-space:pre-wrap">${n.rootCause||'-'}</p>
+      <p style="white-space:pre-wrap">${n.rootCause || n.supplierReply || '-'}</p>
     </div>
     <div class="section">
       <div class="section-title">การดำเนินการแก้ไข</div>
