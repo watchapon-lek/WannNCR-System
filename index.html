@@ -8123,7 +8123,7 @@ function printReport() {
 // ==================== PIN SECURITY ====================
 const PIN_KEY = 'ncr_pin_hash';
 const SESSION_KEY = 'ncr_session';
-const DEFAULT_PIN = '1234';
+const DEFAULT_PIN = '123456';
 
 function hashPin(pin) {
   // Simple hash - XOR + base encode (no external lib needed)
@@ -8138,7 +8138,7 @@ function getSavedPin() {
 
 function isSessionValid() {
   const t = sessionStorage.getItem(SESSION_KEY);
-  return t && (Date.now() - parseInt(t)) < 8 * 60 * 60 * 1000; // 8 ชั่วโมง
+  return false; // ต้องกรอก PIN ทุกครั้งที่เปิดหน้าเว็บ
 }
 
 let pinInput = '';
@@ -8150,10 +8150,10 @@ function initPinOverlay() {
 }
 
 function pinPress(d) {
-  if (pinInput.length >= 4) return;
+  if (pinInput.length >= 6) return;
   pinInput += d;
   updatePinDots();
-  if (pinInput.length === 4) {
+  if (pinInput.length === 6) {
     setTimeout(checkPin, 100);
   }
 }
@@ -8171,7 +8171,7 @@ function pinClear() {
 }
 
 function updatePinDots() {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
     document.getElementById('pd' + i).classList.toggle('filled', i < pinInput.length);
   }
 }
@@ -8214,7 +8214,7 @@ function doChangePin() {
   const errEl = document.getElementById('change-pin-error');
 
   if (hashPin(old) !== getSavedPin()) { errEl.textContent = '❌ PIN ปัจจุบันไม่ถูกต้อง'; return; }
-  if (!/^\d{4}$/.test(n1))           { errEl.textContent = '❌ PIN ใหม่ต้องเป็นตัวเลข 4 หลัก'; return; }
+  if (!/^\d{6}$/.test(n1))           { errEl.textContent = '❌ PIN ใหม่ต้องเป็นตัวเลข 6 หลัก'; return; }
   if (n1 !== n2)                       { errEl.textContent = '❌ PIN ใหม่ไม่ตรงกัน'; return; }
 
   localStorage.setItem(PIN_KEY, hashPin(n1));
@@ -8454,12 +8454,14 @@ function todayStr() {
   <div class="pin-box">
     <div class="pin-logo">🔒</div>
     <div class="pin-title">NCR Online</div>
-    <div class="pin-sub">กรอก PIN เพื่อเข้าใช้งาน</div>
+    <div class="pin-sub">กรอก PIN 6 หลัก เพื่อเข้าใช้งาน</div>
     <div class="pin-dots" id="pin-dots">
       <div class="pin-dot" id="pd0"></div>
       <div class="pin-dot" id="pd1"></div>
       <div class="pin-dot" id="pd2"></div>
       <div class="pin-dot" id="pd3"></div>
+      <div class="pin-dot" id="pd4"></div>
+      <div class="pin-dot" id="pd5"></div>
     </div>
     <div class="pin-pad">
       <button class="pin-btn" onclick="pinPress('1')">1</button>
@@ -8489,15 +8491,15 @@ function todayStr() {
     <div class="modal-body">
       <div class="form-group" style="margin-bottom:14px">
         <label>PIN ปัจจุบัน (4 หลัก)</label>
-        <input type="password" id="pin-old" maxlength="4" placeholder="กรอก PIN เดิม" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
+        <input type="password" id="pin-old" maxlength="6" placeholder="กรอก PIN เดิม" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
       </div>
       <div class="form-group" style="margin-bottom:14px">
         <label>PIN ใหม่ (4 หลัก)</label>
-        <input type="password" id="pin-new1" maxlength="4" placeholder="กรอก PIN ใหม่" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
+        <input type="password" id="pin-new1" maxlength="6" placeholder="กรอก PIN ใหม่" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
       </div>
       <div class="form-group" style="margin-bottom:20px">
         <label>ยืนยัน PIN ใหม่</label>
-        <input type="password" id="pin-new2" maxlength="4" placeholder="กรอก PIN ใหม่อีกครั้ง" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
+        <input type="password" id="pin-new2" maxlength="6" placeholder="กรอก PIN ใหม่อีกครั้ง" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
       </div>
       <div id="change-pin-error" style="color:var(--danger);font-size:.85rem;margin-bottom:12px;min-height:18px"></div>
       <button class="btn btn-primary" onclick="doChangePin()">💾 บันทึก PIN ใหม่</button>
