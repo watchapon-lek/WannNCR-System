@@ -6448,7 +6448,8 @@ const FB_URL = 'https://wannncr-default-rtdb.asia-southeast1.firebasedatabase.ap
 
 async function loadData() {
   try {
-    const token = await getToken();
+    const isReplyMode = new URLSearchParams(window.location.search).get('mode') === 'reply';
+    const token = isReplyMode ? '' : await getToken();
     const authParam = token ? '?auth=' + token : '';
     const [sRes, nRes, srRes] = await Promise.all([
       fetch(FB_URL + '/settings.json' + authParam),
