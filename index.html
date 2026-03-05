@@ -6422,12 +6422,19 @@ const BP_NAMES = [
 
 // ==================== INIT ====================
 window.onload = async function() {
-  // ตั้งค่า autocomplete ก่อน (ไม่ต้องรอ login)
-  setupAutocomplete('bp-input', 'bp-list', BP_NAMES, v => v, 200);
-  setupProductAutocomplete();
-
+  // เช็ค reply mode ก่อนทุกอย่าง — ซ่อน auth overlay ทันทีถ้าเป็น Supplier
   const urlParams = new URLSearchParams(window.location.search);
   const isReplyMode = urlParams.get('mode') === 'reply';
+
+  if (isReplyMode) {
+    // ซ่อน auth overlay ทันที ก่อน Firebase SDK จะ trigger
+    const overlay = document.getElementById('auth-overlay');
+    overlay.style.display = 'none';
+    overlay.classList.add('hidden');
+  }
+
+  setupAutocomplete('bp-input', 'bp-list', BP_NAMES, v => v, 200);
+  setupProductAutocomplete();
 
   if (isReplyMode) {
     // Supplier reply mode — โหลดข้อมูลโดยตรง ไม่ต้อง login
@@ -6436,11 +6443,8 @@ window.onload = async function() {
     initForm();
   } else {
     // Internal mode — รอ Firebase Auth ก่อน
-    initAuthOverlay();
-    // ถ้า user login อยู่แล้ว onAuthStateChanged ใน initAuthOverlay จัดการเอง
-    // ถ้ายังไม่ login จะแสดง overlay และโหลดข้อมูลหลัง doLogin() สำเร็จ
-    // ซ่อน fb-loading เพราะจะรอที่ auth overlay แทน
     document.getElementById('fb-loading').style.display = 'none';
+    initAuthOverlay();
   }
 };
 
@@ -8248,17 +8252,11 @@ async function getToken() {
 }
 
 function initAuthOverlay() {
-  // ถ้าเป็น reply mode ข้ามการ login
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('mode') === 'reply') {
-    document.getElementById('auth-overlay').style.display = 'none';
-    document.getElementById('auth-overlay').classList.add('hidden');
-    return;
-  }
-  // แสดง overlay เสมอ รอ onAuthStateChanged ตัดสิน
   fbAuth.onAuthStateChanged(async function(user) {
     if (user) {
-      // Login อยู่แล้ว — ซ่อน overlay แสดง UI
+      // Login อยู่แล้ว — โหลดข้อมูลและแสดง UI
+      await loadData();
+      initForm(); renderSettings(); renderList(); updateDashboard();
       document.getElementById('auth-overlay').style.display = 'none';
       document.getElementById('auth-overlay').classList.add('hidden');
       document.getElementById('nav-user-bar').style.display = 'flex';
@@ -8286,15 +8284,8 @@ async function doLogin() {
 
   try {
     const cred = await fbAuth.signInWithEmailAndPassword(email, pass);
-    authToken  = await cred.user.getIdToken();
-    // โหลดข้อมูลหลัง login สำเร็จ
-    await loadData();
-    document.getElementById('fb-loading').style.display = 'none';
-    initForm(); renderSettings(); renderList(); updateDashboard();
-    document.getElementById('auth-overlay').style.display = 'none';
-    document.getElementById('auth-overlay').classList.add('hidden');
-    document.getElementById('nav-user-bar').style.display = 'flex';
-    document.getElementById('nav-user-email').textContent = cred.user.email;
+    authToken = await cred.user.getIdToken();
+    // onAuthStateChanged จะจัดการโหลดข้อมูลและซ่อน overlay เองอัตโนมัติ
   } catch(e) {
     btn.disabled = false;
     btn.textContent = 'เข้าสู่ระบบ';
@@ -8338,7 +8329,7 @@ async function doLogout() {
 
 
 <!-- ===== AUTH LOGIN OVERLAY ===== -->
-<div id="auth-overlay">
+<div id="auth-overlay" style="display:none">
   <div class="auth-box">
     <div class="auth-logo">🔒</div>
     <div class="auth-title">NCR Online</div>
