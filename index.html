@@ -350,6 +350,59 @@
   input[readonly] { opacity: .6; cursor: not-allowed; }
 
   .or-divider { text-align: center; color: var(--text-muted); font-size: .8rem; margin: 4px 0; }
+
+  /* ===== PIN LOGIN OVERLAY ===== */
+  #pin-overlay {
+    position: fixed; inset: 0; z-index: 99999;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #pin-overlay.hidden { display: none; }
+  .pin-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 40px 36px;
+    width: 360px;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .pin-logo { font-size: 2.4rem; margin-bottom: 8px; }
+  .pin-title { font-size: 1.25rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .pin-sub { font-size: .85rem; color: var(--text-muted); margin-bottom: 28px; }
+  .pin-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
+  .pin-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--border); transition: background .15s;
+  }
+  .pin-dot.filled { background: var(--accent); }
+  .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .pin-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-size: 1.3rem; font-weight: 600;
+    border-radius: 10px; padding: 14px; cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  .pin-btn:hover { background: var(--border); }
+  .pin-btn:active { transform: scale(.95); }
+  .pin-btn.del { font-size: 1rem; color: var(--text-muted); }
+  .pin-error { color: var(--danger); font-size: .85rem; min-height: 20px; margin-top: 4px; }
+  .pin-shake { animation: pinShake .35s; }
+  @keyframes pinShake {
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 60%{transform:translateX(8px)}
+  }
+
+  /* ===== EXPORT MODAL ===== */
+  .export-section { margin-bottom: 20px; }
+  .export-section label { font-size: .8rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 6px; }
+  .export-btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .btn-export-xl  { background: #217346; color: #fff; border: none; }
+  .btn-export-csv { background: #0066cc; color: #fff; border: none; }
+  .btn-export-pdf { background: #c0392b; color: #fff; border: none; }
+  .btn-export-xl:hover  { background: #1a5c38; }
+  .btn-export-csv:hover { background: #0052a3; }
+  .btn-export-pdf:hover { background: #a93226; }
+
 </style>
 </head>
 <body>
@@ -363,6 +416,8 @@
     <div class="nav-tab" onclick="showPage('ncr-list')">📋 รายการ NCR</div>
     <div class="nav-tab" onclick="showPage('settings')">⚙️ ตั้งค่า</div>
   </div>
+  <button class="btn btn-secondary" style="font-size:.8rem;padding:6px 14px;margin-right:8px" onclick="openExportModal()">📤 Export</button>
+  <button class="btn btn-secondary" style="font-size:.8rem;padding:6px 14px;margin-right:8px" onclick="openChangePinModal()">🔑 เปลี่ยน PIN</button>
 </nav>
 
 <!-- DASHBOARD PAGE -->
@@ -6350,6 +6405,7 @@ const BP_NAMES = [
 
 // ==================== INIT ====================
 window.onload = async function() {
+  initPinOverlay();
   await loadData();
   document.getElementById('fb-loading').style.display = 'none';
   initForm();
@@ -8063,6 +8119,327 @@ function printReport() {
 
 })();
 
+
+// ==================== PIN SECURITY ====================
+const PIN_KEY = 'ncr_pin_hash';
+const SESSION_KEY = 'ncr_session';
+const DEFAULT_PIN = '1234';
+
+function hashPin(pin) {
+  // Simple hash - XOR + base encode (no external lib needed)
+  let h = 0;
+  for (let i = 0; i < pin.length; i++) h = (Math.imul(31, h) + pin.charCodeAt(i)) | 0;
+  return 'ph_' + Math.abs(h).toString(36) + '_' + pin.length;
+}
+
+function getSavedPin() {
+  return localStorage.getItem(PIN_KEY) || hashPin(DEFAULT_PIN);
+}
+
+function isSessionValid() {
+  const t = sessionStorage.getItem(SESSION_KEY);
+  return t && (Date.now() - parseInt(t)) < 8 * 60 * 60 * 1000; // 8 ชั่วโมง
+}
+
+let pinInput = '';
+
+function initPinOverlay() {
+  if (isSessionValid()) {
+    document.getElementById('pin-overlay').classList.add('hidden');
+  }
+}
+
+function pinPress(d) {
+  if (pinInput.length >= 4) return;
+  pinInput += d;
+  updatePinDots();
+  if (pinInput.length === 4) {
+    setTimeout(checkPin, 100);
+  }
+}
+
+function pinDel() {
+  pinInput = pinInput.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function pinClear() {
+  pinInput = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd' + i).classList.toggle('filled', i < pinInput.length);
+  }
+}
+
+function checkPin() {
+  if (hashPin(pinInput) === getSavedPin()) {
+    sessionStorage.setItem(SESSION_KEY, Date.now().toString());
+    document.getElementById('pin-overlay').classList.add('hidden');
+  } else {
+    document.getElementById('pin-error').textContent = '❌ PIN ไม่ถูกต้อง กรุณาลองใหม่';
+    document.getElementById('pin-dots').classList.add('pin-shake');
+    setTimeout(() => {
+      document.getElementById('pin-dots').classList.remove('pin-shake');
+      pinInput = '';
+      updatePinDots();
+    }, 400);
+  }
+}
+
+// Keyboard support
+document.addEventListener('keydown', function(e) {
+  if (document.getElementById('pin-overlay').classList.contains('hidden')) return;
+  if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+  else if (e.key === 'Backspace') pinDel();
+  else if (e.key === 'Escape') pinClear();
+});
+
+function openChangePinModal() {
+  document.getElementById('pin-old').value = '';
+  document.getElementById('pin-new1').value = '';
+  document.getElementById('pin-new2').value = '';
+  document.getElementById('change-pin-error').textContent = '';
+  document.getElementById('change-pin-modal').classList.add('show');
+}
+
+function doChangePin() {
+  const old = document.getElementById('pin-old').value.trim();
+  const n1  = document.getElementById('pin-new1').value.trim();
+  const n2  = document.getElementById('pin-new2').value.trim();
+  const errEl = document.getElementById('change-pin-error');
+
+  if (hashPin(old) !== getSavedPin()) { errEl.textContent = '❌ PIN ปัจจุบันไม่ถูกต้อง'; return; }
+  if (!/^\d{4}$/.test(n1))           { errEl.textContent = '❌ PIN ใหม่ต้องเป็นตัวเลข 4 หลัก'; return; }
+  if (n1 !== n2)                       { errEl.textContent = '❌ PIN ใหม่ไม่ตรงกัน'; return; }
+
+  localStorage.setItem(PIN_KEY, hashPin(n1));
+  closeModal('change-pin-modal');
+  showAlert('✅ เปลี่ยน PIN เรียบร้อยแล้ว');
+}
+
+// ==================== EXPORT ====================
+function openExportModal() {
+  // Set default dates: first day of current month to today
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  document.getElementById('export-date-from').value = firstDay.toISOString().slice(0,10);
+  document.getElementById('export-date-to').value = today.toISOString().slice(0,10);
+  updateExportCount();
+  document.getElementById('export-modal').classList.add('show');
+}
+
+function toggleExportAll(cb) {
+  document.querySelectorAll('.exp-status').forEach(el => el.checked = cb.checked);
+  updateExportCount();
+}
+
+function updateExportCount() {
+  document.getElementById('export-count').textContent = getFilteredExport().length;
+}
+
+// Update count when filters change
+document.addEventListener('change', function(e) {
+  if (['export-date-from','export-date-to','exp-type-ncr','exp-type-ncrw'].includes(e.target.id) ||
+      e.target.classList.contains('exp-status')) {
+    updateExportCount();
+    // Sync "ทั้งหมด" checkbox
+    const allChecked = [...document.querySelectorAll('.exp-status')].every(el => el.checked);
+    document.getElementById('exp-all').checked = allChecked;
+  }
+});
+
+function getFilteredExport() {
+  const from  = document.getElementById('export-date-from').value;
+  const to    = document.getElementById('export-date-to').value;
+  const statuses = [...document.querySelectorAll('.exp-status:checked')].map(el => el.value);
+  const wantNCR  = document.getElementById('exp-type-ncr').checked;
+  const wantNCRW = document.getElementById('exp-type-ncrw').checked;
+
+  return ncrList.filter(n => {
+    if (from && n.date < from) return false;
+    if (to   && n.date > to)   return false;
+    if (!statuses.includes(n.status)) return false;
+    const isNCRW = n.id && n.id.startsWith('NCRW');
+    if (isNCRW && !wantNCRW) return false;
+    if (!isNCRW && !wantNCR) return false;
+    return true;
+  });
+}
+
+const STATUS_TH = {open:'เปิดใหม่','waiting-reply':'รอตอบกลับ','waiting-audit':'รอตรวจติดตาม',closed:'ปิดแล้ว'};
+
+const EXPORT_COLS = [
+  {key:'id',            label:'เลขที่เอกสาร'},
+  {key:'date',          label:'วันที่ออกเอกสาร'},
+  {key:'ncType',        label:'ประเภท'},
+  {key:'bp',            label:'บริษัท/หน่วยงาน'},
+  {key:'dept',          label:'แผนก'},
+  {key:'subject',       label:'เรื่อง'},
+  {key:'ncName',        label:'ชื่อสิ่งที่ NC'},
+  {key:'productCode',   label:'รหัสสินค้า'},
+  {key:'refDoc',        label:'เลขอ้างอิง'},
+  {key:'defectDetail',  label:'รายละเอียดข้อบกพร่อง'},
+  {key:'reporter',      label:'ผู้รายงาน'},
+  {key:'reviewer',      label:'ผู้ทบทวน'},
+  {key:'status',        label:'สถานะ', fmt: v => STATUS_TH[v] || v},
+  {key:'supplierReply', label:'สาเหตุ (Root Cause)'},
+  {key:'supplierCA',    label:'การแก้ไข (Corrective Action)'},
+  {key:'supplierPreventive', label:'การป้องกัน (Preventive Action)'},
+  {key:'supplierPerson',     label:'ผู้รับผิดชอบ Supplier'},
+  {key:'supplierPosition',   label:'ตำแหน่ง'},
+  {key:'actionStartDate',    label:'วันที่เริ่มดำเนินการ'},
+  {key:'actionDuration',     label:'ระยะเวลา'},
+  {key:'auditDueDate',       label:'กำหนดตรวจ'},
+  {key:'auditResult',        label:'ผลการตรวจ'},
+  {key:'auditor',            label:'ผู้ตรวจ'},
+  {key:'auditorSignDate',    label:'วันที่ตรวจ'},
+  {key:'closureResult',      label:'ผลปิด NCR', fmt: v => v==='accept'?'ยอมรับ':v==='reject'?'ไม่ยอมรับ':''},
+  {key:'qmr',                label:'QMR'},
+  {key:'closureDate',        label:'วันที่ปิด'},
+  {key:'remark',             label:'หมายเหตุ'},
+];
+
+function doExport(type) {
+  const rows = getFilteredExport();
+  if (!rows.length) { alert('ไม่มีข้อมูลที่ตรงกับเงื่อนไข'); return; }
+
+  if (type === 'csv') exportCSV(rows);
+  else if (type === 'xlsx') exportXLSX(rows);
+  else if (type === 'pdf') exportPDF(rows);
+}
+
+// ---- CSV ----
+function exportCSV(rows) {
+  const header = EXPORT_COLS.map(c => '"' + c.label + '"').join(',');
+  const body   = rows.map(n =>
+    EXPORT_COLS.map(c => {
+      let v = n[c.key] || '';
+      if (c.fmt) v = c.fmt(v);
+      return '"' + String(v).replace(/"/g, '""') + '"';
+    }).join(',')
+  ).join('\n');
+
+  const bom  = '\uFEFF';
+  const blob = new Blob([bom + header + '\n' + body], {type:'text/csv;charset=utf-8'});
+  downloadBlob(blob, 'NCR_Export_' + todayStr() + '.csv');
+}
+
+// ---- XLSX (using SheetJS from CDN) ----
+function exportXLSX(rows) {
+  if (typeof XLSX === 'undefined') {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => _doXLSX(rows);
+    document.head.appendChild(s);
+  } else {
+    _doXLSX(rows);
+  }
+}
+
+function _doXLSX(rows) {
+  const wsData = [
+    EXPORT_COLS.map(c => c.label),
+    ...rows.map(n => EXPORT_COLS.map(c => {
+      let v = n[c.key] || '';
+      if (c.fmt) v = c.fmt(v);
+      return v;
+    }))
+  ];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws['!cols'] = EXPORT_COLS.map((c, i) => ({
+    wch: [8,12,12,22,14,18,18,18,14,30,12,12,12,30,30,30,16,12,14,12,14,20,12,12,10,10,12,18][i] || 14
+  }));
+
+  // Header style (row 0)
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
+    if (cell) {
+      cell.s = { font:{bold:true, color:{rgb:'FFFFFF'}}, fill:{fgColor:{rgb:'1a1d27'}}, alignment:{horizontal:'center'} };
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, 'NCR Data');
+  XLSX.writeFile(wb, 'NCR_Export_' + todayStr() + '.xlsx');
+}
+
+// ---- PDF ----
+function exportPDF(rows) {
+  const statusLabels = {'open':'🔴 เปิดใหม่','waiting-reply':'🟡 รอตอบกลับ','waiting-audit':'🔵 รอตรวจติดตาม','closed':'🟢 ปิดแล้ว'};
+  const from = document.getElementById('export-date-from').value;
+  const to   = document.getElementById('export-date-to').value;
+
+  const tableRows = rows.map(n => `
+    <tr>
+      <td>${n.id||''}</td>
+      <td>${n.date||''}</td>
+      <td>${n.bp||''}</td>
+      <td>${n.ncType||''}</td>
+      <td>${(n.defectDetail||'').slice(0,60)}${(n.defectDetail||'').length>60?'...':''}</td>
+      <td>${STATUS_TH[n.status]||n.status||''}</td>
+      <td>${n.reporter||''}</td>
+      <td>${n.closureDate||''}</td>
+    </tr>
+  `).join('');
+
+  const html = `<!DOCTYPE html><html><head>
+  <meta charset="UTF-8">
+  <title>NCR Export Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:'Sarabun',sans-serif;font-size:11px;color:#111;margin:20px}
+    h2{font-size:16px;margin-bottom:4px;color:#c00}
+    .sub{color:#555;font-size:10px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse;font-size:10px}
+    th{background:#1a1d27;color:#fff;padding:6px 8px;text-align:left;font-weight:600}
+    td{padding:5px 8px;border-bottom:1px solid #e0e0e0;vertical-align:top}
+    tr:nth-child(even) td{background:#f9f9f9}
+    .footer{margin-top:16px;font-size:9px;color:#999;text-align:right}
+    @page{size:A4 landscape;margin:12mm}
+  </style></head><body>
+  <h2>📋 รายงาน NCR Export</h2>
+  <div class="sub">ช่วงวันที่: ${from||'-'} ถึง ${to||'-'} &nbsp;|&nbsp; จำนวน: ${rows.length} รายการ &nbsp;|&nbsp; วันที่ Export: ${new Date().toLocaleDateString('th-TH')}</div>
+  <table>
+    <thead><tr>
+      <th>เลขที่</th><th>วันที่</th><th>บริษัท/หน่วยงาน</th><th>ประเภท</th>
+      <th>รายละเอียดข้อบกพร่อง</th><th>สถานะ</th><th>ผู้รายงาน</th><th>วันที่ปิด</th>
+    </tr></thead>
+    <tbody>${tableRows}</tbody>
+  </table>
+  <div class="footer">Generated by NCR Online System — ${new Date().toLocaleString('th-TH')}</div>
+  <script>window.onload=()=>setTimeout(()=>{window.print();},500)<\/script>
+  </body></html>`;
+
+  const win = window.open('','_blank','width=1000,height=700');
+  win.document.write(html);
+  win.document.close();
+}
+
+// ---- Helper ----
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0,10).replace(/-/g,'');
+}
+
+// PIN initialized in window.onload
+
 </script>
   <!-- Firebase Loading Overlay -->
   <div id="fb-loading" style="position:fixed;inset:0;background:rgba(15,17,23,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
@@ -8070,6 +8447,122 @@ function printReport() {
     <div style="color:#4fc3f7;font-size:1.1rem;font-weight:600">กำลังโหลดข้อมูล...</div>
     <div style="color:#7b82a0;font-size:.85rem">กำลังเชื่อมต่อ Firebase</div>
   </div>
+
+
+<!-- ===== PIN LOGIN OVERLAY ===== -->
+<div id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-logo">🔒</div>
+    <div class="pin-title">NCR Online</div>
+    <div class="pin-sub">กรอก PIN เพื่อเข้าใช้งาน</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinPress('1')">1</button>
+      <button class="pin-btn" onclick="pinPress('2')">2</button>
+      <button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button>
+      <button class="pin-btn" onclick="pinPress('5')">5</button>
+      <button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button>
+      <button class="pin-btn" onclick="pinPress('8')">8</button>
+      <button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn del" onclick="pinClear()">ล้าง</button>
+      <button class="pin-btn" onclick="pinPress('0')">0</button>
+      <button class="pin-btn del" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+</div>
+
+<!-- ===== CHANGE PIN MODAL ===== -->
+<div class="modal-overlay" id="change-pin-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title">🔑 เปลี่ยน PIN</div>
+      <button class="modal-close" onclick="closeModal('change-pin-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:14px">
+        <label>PIN ปัจจุบัน (4 หลัก)</label>
+        <input type="password" id="pin-old" maxlength="4" placeholder="กรอก PIN เดิม" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>PIN ใหม่ (4 หลัก)</label>
+        <input type="password" id="pin-new1" maxlength="4" placeholder="กรอก PIN ใหม่" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label>ยืนยัน PIN ใหม่</label>
+        <input type="password" id="pin-new2" maxlength="4" placeholder="กรอก PIN ใหม่อีกครั้ง" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
+      </div>
+      <div id="change-pin-error" style="color:var(--danger);font-size:.85rem;margin-bottom:12px;min-height:18px"></div>
+      <button class="btn btn-primary" onclick="doChangePin()">💾 บันทึก PIN ใหม่</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EXPORT MODAL ===== -->
+<div class="modal-overlay" id="export-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">📤 Export ข้อมูล NCR</div>
+      <button class="modal-close" onclick="closeModal('export-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="export-section">
+        <label>📅 ช่วงวันที่</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="date" id="export-date-from" style="flex:1">
+          <span style="color:var(--text-muted)">ถึง</span>
+          <input type="date" id="export-date-to" style="flex:1">
+        </div>
+      </div>
+      <div class="export-section">
+        <label>🏷 สถานะ</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+            <input type="checkbox" id="exp-all" checked onchange="toggleExportAll(this)"> ทั้งหมด
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+            <input type="checkbox" class="exp-status" value="open" checked> 🔴 เปิดใหม่
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+            <input type="checkbox" class="exp-status" value="waiting-reply" checked> 🟡 รอตอบกลับ
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+            <input type="checkbox" class="exp-status" value="waiting-audit" checked> 🔵 รอตรวจติดตาม
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+            <input type="checkbox" class="exp-status" value="closed" checked> 🟢 ปิดแล้ว
+          </label>
+        </div>
+      </div>
+      <div class="export-section">
+        <label>📂 ประเภทเอกสาร</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+            <input type="checkbox" id="exp-type-ncr" checked> NCR (Supplier)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+            <input type="checkbox" id="exp-type-ncrw" checked> NCRW (ภายใน)
+          </label>
+        </div>
+      </div>
+      <div id="export-preview" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:4px;font-size:.85rem;color:var(--text-muted)">
+        รายการที่จะ Export: <span id="export-count" style="color:var(--accent2);font-weight:700">0</span> รายการ
+      </div>
+      <div class="export-btn-row">
+        <button class="btn btn-export-xl" onclick="doExport('xlsx')">📊 Export Excel</button>
+        <button class="btn btn-export-csv" onclick="doExport('csv')">📋 Export CSV</button>
+        <button class="btn btn-export-pdf" onclick="doExport('pdf')">📄 Export PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
