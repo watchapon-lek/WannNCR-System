@@ -6405,9 +6405,9 @@ const BP_NAMES = [
 
 // ==================== INIT ====================
 window.onload = async function() {
-  initPinOverlay();
   await loadData();
   document.getElementById('fb-loading').style.display = 'none';
+  initPinOverlay();
   initForm();
   renderSettings();
   renderList();
@@ -8144,9 +8144,12 @@ function isSessionValid() {
 let pinInput = '';
 
 function initPinOverlay() {
-  if (isSessionValid()) {
-    document.getElementById('pin-overlay').classList.add('hidden');
-  }
+  // แสดง PIN overlay เสมอทุกครั้งที่โหลดหน้า
+  const overlay = document.getElementById('pin-overlay');
+  overlay.classList.remove('hidden');
+  overlay.style.display = 'flex';
+  pinInput = '';
+  updatePinDots();
 }
 
 function pinPress(d) {
@@ -8178,8 +8181,9 @@ function updatePinDots() {
 
 function checkPin() {
   if (hashPin(pinInput) === getSavedPin()) {
-    sessionStorage.setItem(SESSION_KEY, Date.now().toString());
-    document.getElementById('pin-overlay').classList.add('hidden');
+    const overlay = document.getElementById('pin-overlay');
+    overlay.style.display = 'none';
+    overlay.classList.add('hidden');
   } else {
     document.getElementById('pin-error').textContent = '❌ PIN ไม่ถูกต้อง กรุณาลองใหม่';
     document.getElementById('pin-dots').classList.add('pin-shake');
