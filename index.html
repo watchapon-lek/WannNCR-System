@@ -4,206 +4,161 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NCR System</title>
-
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
 <style>
-body { background:#f5f6fa; }
-.card { border-radius:12px; }
+body { background: #f8f9fa; }
+.container { margin-top: 40px; }
 </style>
-
 </head>
 <body>
 
-<div class="container mt-4 mb-5">
-<h3 class="mb-4">📋 NCR Form</h3>
+<div class="container">
+  <h2 class="mb-4">📋 ฟอร์ม NCR System</h2>
 
-<div class="card p-4 shadow-sm">
+  <div class="row g-3">
 
-<div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">เลขที่เอกสาร</label>
+      <input type="text" id="docNo" class="form-control">
+    </div>
 
-<div class="col-md-6">
-<label class="form-label">เลขที่เอกสาร</label>
-<input type="text" id="docNo" class="form-control">
+    <div class="col-md-6">
+      <label class="form-label">วันที่</label>
+      <input type="date" id="docDate" class="form-control">
+    </div>
+
+    <!-- ข้อ 1: เปลี่ยนเป็นเลือกแผนก -->
+    <div class="col-md-6">
+      <label class="form-label">เรียน (แผนกที่รับผิดชอบ)</label>
+      <select id="dept" class="form-select">
+        <option value="">-- เลือกแผนก --</option>
+      </select>
+    </div>
+
+    <!-- ข้อ 2: ย้ายไปช่องบริษัท -->
+    <div class="col-md-6">
+      <label class="form-label">บริษัท / หน่วยงาน</label>
+      <input type="text" id="company" class="form-control">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">รหัสสินค้า</label>
+      <select id="productCode" class="form-select">
+        <option value="">-- เลือกรหัสสินค้า --</option>
+      </select>
+    </div>
+
+    <!-- ข้อ 3: ชื่อสินค้าอัตโนมัติ -->
+    <div class="col-md-6">
+      <label class="form-label">ชื่อสิ่งที่ไม่เป็นไปตามข้อกำหนด</label>
+      <input type="text" id="productName" class="form-control" readonly>
+    </div>
+
+    <div class="col-md-12">
+      <label class="form-label">รายละเอียด</label>
+      <textarea id="detail" class="form-control" rows="4"></textarea>
+    </div>
+
+  </div>
+
+  <div class="mt-4">
+    <button class="btn btn-primary" onclick="saveData()">💾 บันทึก</button>
+    <button class="btn btn-secondary" onclick="previewForm()">👁 พรีวิว</button>
+    <button class="btn btn-danger" onclick="clearForm()">🧹 ล้างฟอร์ม</button>
+  </div>
 </div>
 
-<div class="col-md-6">
-<label class="form-label">วันที่</label>
-<input type="date" id="docDate" class="form-control">
-</div>
-
-<!-- ✅ แก้ไขตามข้อ 1 -->
-<div class="col-md-6">
-<label class="form-label">เรียน (แผนกที่รับผิดชอบ)</label>
-<select id="department" class="form-select">
-<option value="">-- เลือกแผนก --</option>
-</select>
-</div>
-
-<!-- ✅ ข้อ 2 -->
-<div class="col-md-6">
-<label class="form-label">บริษัท / หน่วยงาน</label>
-<input type="text" id="company" class="form-control">
-</div>
-
-<div class="col-md-6">
-<label class="form-label">รหัสสินค้า</label>
-<select id="productCode" class="form-select">
-<option value="">-- เลือกรหัสสินค้า --</option>
-</select>
-</div>
-
-<!-- ✅ ข้อ 3 -->
-<div class="col-md-6">
-<label class="form-label">ชื่อสิ่งที่ไม่เป็นไปตามข้อกำหนด</label>
-<input type="text" id="productName" class="form-control" readonly>
-</div>
-
-<div class="col-12">
-<label class="form-label">รายละเอียด</label>
-<textarea id="detail" class="form-control" rows="4"></textarea>
-</div>
-
-</div>
-
-<div class="mt-4">
-<button class="btn btn-primary" onclick="saveData()">💾 บันทึก</button>
-<button class="btn btn-secondary" onclick="preview()">👁 พรีวิว</button>
-<button class="btn btn-danger" onclick="clearForm()">ล้างฟอร์ม</button>
-</div>
-
-</div>
-</div>
-
-<!-- ✅ Modal Preview (ข้อ 4) -->
+<!-- Modal ข้อ 4: พรีวิว -->
 <div class="modal fade" id="previewModal" tabindex="-1">
-<div class="modal-dialog modal-lg">
-<div class="modal-content">
-<div class="modal-header">
-<h5 class="modal-title">พรีวิว NCR</h5>
-<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-</div>
-<div class="modal-body" id="previewContent"></div>
-</div>
-</div>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">พรีวิว NCR</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="previewContent"></div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 
-// =============================
-// 🔹 MASTER DATA (แก้ไขตรงนี้ได้)
-// =============================
-
+// 🧠 Master Data สำหรับเลือก
 const departments = [
-"QA",
-"QC",
-"Production",
-"Warehouse",
-"R&D",
-"Purchasing"
+  "QA","QC","Production","Warehouse","R&D","Purchasing"
 ];
 
 const products = [
-{code:"FG001", name:"Facial Cream 50g"},
-{code:"RM002", name:"Glycerin USP"},
-{code:"PK003", name:"Bottle 100ml"},
-{code:"FG004", name:"Shampoo 250ml"}
+  {code:"FG001", name:"Facial Cream 50g"},
+  {code:"RM002", name:"Glycerin USP"},
+  {code:"PK003", name:"Bottle 100ml"},
+  {code:"FG004", name:"Shampoo 250ml"}
 ];
 
-// =============================
-// 🔹 LOAD DATA
-// =============================
-
+// โหลดข้อมูลเลือกแผนก + รหัสสินค้า
 window.onload = function() {
+  const deptEl = document.getElementById("dept");
+  departments.forEach(d => {
+    let o = document.createElement("option");
+    o.value = d;
+    o.textContent = d;
+    deptEl.appendChild(o);
+  });
 
-const deptSelect = document.getElementById("department");
-departments.forEach(d => {
-let option = document.createElement("option");
-option.value = d;
-option.textContent = d;
-deptSelect.appendChild(option);
-});
-
-const codeSelect = document.getElementById("productCode");
-products.forEach(p => {
-let option = document.createElement("option");
-option.value = p.code;
-option.textContent = p.code;
-codeSelect.appendChild(option);
-});
-
+  const codeEl = document.getElementById("productCode");
+  products.forEach(p => {
+    let o = document.createElement("option");
+    o.value = p.code;
+    o.textContent = p.code;
+    codeEl.appendChild(o);
+  });
 };
 
-// =============================
-// 🔹 AUTO FILL PRODUCT NAME (ข้อ 3)
-// =============================
-
+// อัปเดตชื่อสินค้าเมื่อเลือกรหัส
 document.getElementById("productCode").addEventListener("change", function(){
-const selected = products.find(p => p.code === this.value);
-document.getElementById("productName").value = selected ? selected.name : "";
+  const found = products.find(p => p.code === this.value);
+  document.getElementById("productName").value = found ? found.name : "";
 });
 
-// =============================
-// 🔹 SAVE (LocalStorage)
-// =============================
-
+// บันทึกข้อมูล (เก็บใน LocalStorage)
 function saveData(){
-
-const data = {
-docNo: docNo.value,
-date: docDate.value,
-department: department.value,
-company: company.value,
-code: productCode.value,
-name: productName.value,
-detail: detail.value
-};
-
-let records = JSON.parse(localStorage.getItem("ncrData")) || [];
-records.push(data);
-localStorage.setItem("ncrData", JSON.stringify(records));
-
-alert("บันทึกเรียบร้อยแล้ว");
-
+  const record = {
+    docNo: docNo.value,
+    date: docDate.value,
+    dept: dept.value,
+    company: company.value,
+    code: productCode.value,
+    name: productName.value,
+    detail: detail.value
+  };
+  let arr = JSON.parse(localStorage.getItem("ncrRecords")) || [];
+  arr.push(record);
+  localStorage.setItem("ncrRecords", JSON.stringify(arr));
+  alert("บันทึกเรียบร้อยแล้ว!");
 }
 
-// =============================
-// 🔹 PREVIEW (ข้อ 4)
-// =============================
-
-function preview(){
-
-const html = `
-<div class="border p-3">
-<p><strong>เลขที่:</strong> ${docNo.value}</p>
-<p><strong>วันที่:</strong> ${docDate.value}</p>
-<p><strong>แผนก:</strong> ${department.value}</p>
-<p><strong>บริษัท:</strong> ${company.value}</p>
-<p><strong>รหัสสินค้า:</strong> ${productCode.value}</p>
-<p><strong>ชื่อสินค้า:</strong> ${productName.value}</p>
-<p><strong>รายละเอียด:</strong><br>${detail.value}</p>
-</div>
-`;
-
-document.getElementById("previewContent").innerHTML = html;
-
-let modal = new bootstrap.Modal(document.getElementById('previewModal'));
-modal.show();
-
+// พรีวิว Modal
+function previewForm(){
+  const html = `
+    <p><strong>เลขที่:</strong> ${docNo.value}</p>
+    <p><strong>วันที่:</strong> ${docDate.value}</p>
+    <p><strong>แผนก:</strong> ${dept.value}</p>
+    <p><strong>บริษัท:</strong> ${company.value}</p>
+    <p><strong>รหัส:</strong> ${productCode.value}</p>
+    <p><strong>ชื่อสินค้า:</strong> ${productName.value}</p>
+    <p><strong>รายละเอียด:</strong><br>${detail.value}</p>
+  `;
+  document.getElementById("previewContent").innerHTML = html;
+  new bootstrap.Modal(document.getElementById("previewModal")).show();
 }
 
-// =============================
-// 🔹 CLEAR
-// =============================
-
+// ล้างฟอร์ม
 function clearForm(){
-document.querySelectorAll("input, textarea").forEach(el => el.value="");
-document.querySelectorAll("select").forEach(el => el.selectedIndex=0);
+  document.querySelectorAll("input, textarea").forEach(el=>el.value="");
+  document.querySelectorAll("select").forEach(el=>el.selectedIndex=0);
 }
 
 </script>
-
 </body>
 </html>
