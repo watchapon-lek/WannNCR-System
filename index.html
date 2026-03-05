@@ -210,21 +210,19 @@ tr:hover td{background:rgba(255,255,255,.018)}
 <div id="P-s1" class="pg">
   <div class="sh"><div class="sh-num n1">①</div><div><h2>ออก NCR — ใบรายงานสิ่งที่ไม่เป็นไปตามข้อกำหนด</h2><p>QA/QC กรอกข้อมูลเมื่อพบสิ่งที่ไม่เป็นไปตามข้อกำหนด แล้วส่งให้ Supplier ดำเนินการ</p></div></div>
 
-  <div class="card">
-    <div class="card-ttl" style="color:var(--c1)">ข้อมูลเอกสาร</div>
-    <div class="g g3">
-      <div class="fg"><label>เลขที่เอกสาร <span class="req">*</span></label><input id="f_id" type="text" placeholder="NCR001/26"></div>
-      <div class="fg"><label>วันที่ออกเอกสาร <span class="req">*</span></label><input id="f_date" type="date"></div>
-      <div class="fg">
-        <label>ประเภทสิ่งที่ไม่เป็นไปตามข้อกำหนด</label>
-        <select id="f_type" onchange="toggleOther()">
-          <option value="">— เลือกประเภท —</option>
-          <option>วัตถุดิบ</option><option>บรรจุภัณฑ์</option>
-          <option>เครื่องสำอางรอบรรจุ</option><option>เครื่องสำอางสำเร็จรูป (FG)</option>
-          <option>อื่น ๆ (ระบุ)</option>
-        </select>
-      </div>
-    </div>
+  <div class="fg">
+  <label>ประเภทเอกสาร <span class="req">*</span></label>
+  <select id="doc_type" onchange="generateDocNo()">
+    <option value="">-- เลือกประเภท --</option>
+    <option value="NCR">ภายนอก</option>
+    <option value="NCRW">ภายใน</option>
+  </select>
+</div>
+
+<div class="fg">
+  <label>เลขที่เอกสาร <span class="req">*</span></label>
+  <input id="f_id" type="text" placeholder="ระบบจะสร้างให้อัตโนมัติ" readonly>
+</div>
     <div id="f_type_other_row" style="display:none;margin-top:10px" class="g g2">
       <div class="fg"><label>ระบุประเภทอื่น ๆ</label><input id="f_type_other" type="text" placeholder="ระบุ..."></div>
     </div>
@@ -6610,4 +6608,27 @@ async function init(){
 window.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
+  <script>
+let docCounter = {
+  NCR: 1,
+  NCRW: 1
+};
+
+function generateDocNo() {
+  const type = document.getElementById("doc_type").value;
+  const input = document.getElementById("f_id");
+
+  if (!type) {
+    input.value = "";
+    return;
+  }
+
+  const year = new Date().getFullYear().toString().slice(-2);
+  const running = String(docCounter[type]).padStart(3, '0');
+
+  input.value = `${type}${running}/${year}`;
+
+  docCounter[type]++;
+}
+</script>
 </html>
