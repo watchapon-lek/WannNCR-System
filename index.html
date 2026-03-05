@@ -351,45 +351,44 @@
 
   .or-divider { text-align: center; color: var(--text-muted); font-size: .8rem; margin: 4px 0; }
 
-  /* ===== PIN LOGIN OVERLAY ===== */
-  #pin-overlay {
+  /* ===== AUTH LOGIN OVERLAY ===== */
+  #auth-overlay {
     position: fixed; inset: 0; z-index: 99999;
     background: var(--bg);
     display: flex; align-items: center; justify-content: center;
   }
-  #pin-overlay.hidden { display: none; }
-  .pin-box {
+  #auth-overlay.hidden { display: none; }
+  .auth-box {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 18px;
-    padding: 40px 36px;
-    width: 360px;
+    padding: 44px 40px;
+    width: 400px;
     box-shadow: var(--shadow);
-    text-align: center;
   }
-  .pin-logo { font-size: 2.4rem; margin-bottom: 8px; }
-  .pin-title { font-size: 1.25rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
-  .pin-sub { font-size: .85rem; color: var(--text-muted); margin-bottom: 28px; }
-  .pin-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
-  .pin-dot {
-    width: 16px; height: 16px; border-radius: 50%;
-    background: var(--border); transition: background .15s;
-  }
-  .pin-dot.filled { background: var(--accent); }
-  .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-  .pin-btn {
+  .auth-logo { font-size: 2.4rem; margin-bottom: 8px; text-align:center; }
+  .auth-title { font-size: 1.25rem; font-weight: 700; color: var(--text); margin-bottom: 4px; text-align:center; }
+  .auth-sub { font-size: .85rem; color: var(--text-muted); margin-bottom: 28px; text-align:center; }
+  .auth-field { margin-bottom: 16px; }
+  .auth-field label { font-size: .8rem; color: var(--text-muted); font-weight: 600; display:block; margin-bottom:6px; }
+  .auth-field input {
+    width: 100%; padding: 12px 14px; border-radius: 8px;
     background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text); font-size: 1.3rem; font-weight: 600;
-    border-radius: 10px; padding: 14px; cursor: pointer;
-    transition: background .15s, transform .1s;
+    color: var(--text); font-size: 1rem; font-family: Sarabun, sans-serif;
   }
-  .pin-btn:hover { background: var(--border); }
-  .pin-btn:active { transform: scale(.95); }
-  .pin-btn.del { font-size: 1rem; color: var(--text-muted); }
-  .pin-error { color: var(--danger); font-size: .85rem; min-height: 20px; margin-top: 4px; }
-  .pin-shake { animation: pinShake .35s; }
-  @keyframes pinShake {
-    0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 60%{transform:translateX(8px)}
+  .auth-field input:focus { outline: none; border-color: var(--accent); }
+  .auth-submit {
+    width: 100%; padding: 13px; border-radius: 8px; border: none;
+    background: var(--accent); color: #fff; font-size: 1rem;
+    font-weight: 700; cursor: pointer; font-family: Sarabun, sans-serif;
+    margin-top: 8px; transition: opacity .2s;
+  }
+  .auth-submit:hover { opacity: .88; }
+  .auth-submit:disabled { opacity: .5; cursor: not-allowed; }
+  .auth-error { color: var(--danger); font-size: .85rem; min-height: 20px; margin-top: 10px; text-align:center; }
+  .auth-user-bar {
+    font-size: .8rem; color: var(--text-muted);
+    display: flex; align-items: center; gap: 8px; margin-right: 8px;
   }
 
   /* ===== EXPORT MODAL ===== */
@@ -404,6 +403,21 @@
   .btn-export-pdf:hover { background: #a93226; }
 
 </style>
+<!-- Firebase Auth SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4K4_7SoGyNyMU-dWEpRBcDuzhDj9Ufqc",
+    authDomain: "wannncr.firebaseapp.com",
+    databaseURL: "https://wannncr-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "wannncr",
+    storageBucket: "wannncr.firebasestorage.app",
+    messagingSenderId: "511185555587",
+    appId: "1:511185555587:web:5d09da42e2c2fd1fe40bb6",
+    measurementId: "G-T0D5G56TC1"
+  };
+</script>
 </head>
 <body>
 
@@ -417,7 +431,10 @@
     <div class="nav-tab" onclick="showPage('settings')">⚙️ ตั้งค่า</div>
   </div>
   <button class="btn btn-secondary" style="font-size:.8rem;padding:6px 14px;margin-right:8px" onclick="openExportModal()">📤 Export</button>
-  <button class="btn btn-secondary" style="font-size:.8rem;padding:6px 14px;margin-right:8px" onclick="openChangePinModal()">🔑 เปลี่ยน PIN</button>
+  <div class="auth-user-bar" id="nav-user-bar" style="display:none">
+    <span id="nav-user-email" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+    <button class="btn btn-secondary" style="font-size:.78rem;padding:5px 12px" onclick="doLogout()">ออกจากระบบ</button>
+  </div>
 </nav>
 
 <!-- DASHBOARD PAGE -->
@@ -6405,47 +6422,80 @@ const BP_NAMES = [
 
 // ==================== INIT ====================
 window.onload = async function() {
-  await loadData();
-  document.getElementById('fb-loading').style.display = 'none';
-  initPinOverlay();
-  initForm();
-  renderSettings();
-  renderList();
-  updateDashboard();
+  // ตั้งค่า autocomplete ก่อน (ไม่ต้องรอ login)
   setupAutocomplete('bp-input', 'bp-list', BP_NAMES, v => v, 200);
   setupProductAutocomplete();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const isReplyMode = urlParams.get('mode') === 'reply';
+
+  if (isReplyMode) {
+    // Supplier reply mode — โหลดข้อมูลโดยตรง ไม่ต้อง login
+    await loadData();
+    document.getElementById('fb-loading').style.display = 'none';
+    initForm();
+  } else {
+    // Internal mode — รอ Firebase Auth ก่อน
+    initAuthOverlay();
+    // ถ้า user login อยู่แล้ว onAuthStateChanged ใน initAuthOverlay จัดการเอง
+    // ถ้ายังไม่ login จะแสดง overlay และโหลดข้อมูลหลัง doLogin() สำเร็จ
+    // ซ่อน fb-loading เพราะจะรอที่ auth overlay แทน
+    document.getElementById('fb-loading').style.display = 'none';
+  }
 };
 
 const FB_URL = 'https://wannncr-default-rtdb.asia-southeast1.firebasedatabase.app';
 
 async function loadData() {
   try {
-    const [sRes, nRes] = await Promise.all([
-      fetch(FB_URL + '/settings.json'),
-      fetch(FB_URL + '/ncrList.json')
+    const token = await getToken();
+    const authParam = token ? '?auth=' + token : '';
+    const [sRes, nRes, srRes] = await Promise.all([
+      fetch(FB_URL + '/settings.json' + authParam),
+      fetch(FB_URL + '/ncrList.json' + authParam),
+      fetch(FB_URL + '/supplierReply.json')  // supplierReply ไม่ต้อง auth
     ]);
-    const s = await sRes.json();
-    const n = await nRes.json();
-    // ถ้ามีข้อมูลใน Firebase ให้ใช้ ถ้าไม่มีให้ใช้ค่า default
+    const s  = await sRes.json();
+    const n  = await nRes.json();
+    const sr = await srRes.json();
+
     if (s && typeof s === 'object' && !Array.isArray(s)) settings = Object.assign({}, settings, s);
     if (n && n !== null) ncrList = Array.isArray(n) ? n : Object.values(n);
-    // กรองค่า null ออก
     ncrList = ncrList.filter(x => x !== null && x !== undefined);
+
+    // Merge supplierReply path กลับเข้า ncrList
+    if (sr && typeof sr === 'object') {
+      Object.keys(sr).forEach(key => {
+        const ncrId = key.replace(/_/g, '/'); // NCR001_26 → NCR001/26
+        const data  = sr[key];
+        const idx   = ncrList.findIndex(x => x.id === ncrId);
+        if (idx !== -1 && data) {
+          // merge เฉพาะ field ที่ Supplier กรอก ไม่ทับข้อมูลอื่น
+          const fields = ['supplierReply','supplierCA','supplierPreventive',
+                          'supplierPerson','supplierPosition','supplierReplyDate',
+                          'actionStartDate','actionDuration','auditDueDate','fixAcknowledgeDate'];
+          fields.forEach(f => { if (data[f]) ncrList[idx][f] = data[f]; });
+          if (data.status) ncrList[idx].status = data.status;
+          if (data.updatedAt) ncrList[idx].updatedAt = data.updatedAt;
+        }
+      });
+    }
   } catch(e) {
     console.error('Firebase loadData error:', e);
-    // ถ้าโหลดไม่ได้ ให้ใช้ค่า default เดิม
   }
 }
 
 async function saveData() {
   try {
+    const token = await getToken();
+    const authParam = token ? '?auth=' + token : '';
     await Promise.all([
-      fetch(FB_URL + '/settings.json', {
+      fetch(FB_URL + '/settings.json' + authParam, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(settings)
       }),
-      fetch(FB_URL + '/ncrList.json', {
+      fetch(FB_URL + '/ncrList.json' + authParam, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(ncrList)
@@ -6454,6 +6504,38 @@ async function saveData() {
   } catch(e) {
     console.error('Firebase saveData error:', e);
     alert('บันทึกข้อมูลไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ');
+  }
+}
+
+// บันทึกการตอบกลับ Supplier ไปยัง /supplierReply path แยก (ไม่ต้อง auth)
+async function saveSupplierReplyToPath(ncrId, data) {
+  const key = ncrId.replace(/\//g, '_'); // NCR001/26 → NCR001_26
+  try {
+    await fetch(FB_URL + '/supplierReply/' + key + '.json', {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    return true;
+  } catch(e) {
+    console.error('saveSupplierReplyToPath error:', e);
+    return false;
+  }
+}
+
+// โหลดข้อมูล NCR สำหรับ Supplier (อ่านเฉพาะ NCR ที่ตรง ID จาก supplierReply path)
+async function loadNcrForSupplier(ncrId) {
+  // Supplier อ่านข้อมูลจาก supplierReply path ที่เปิด public
+  // และ ncrList ที่ rules อนุญาต read public (สำหรับแสดงรายละเอียด NCR)
+  try {
+    const res = await fetch(FB_URL + '/ncrList.json');
+    if (!res.ok) return null;
+    const all = await res.json();
+    const list = Array.isArray(all) ? all : Object.values(all || {});
+    return list.find(n => n && n.id === ncrId) || null;
+  } catch(e) {
+    console.error('loadNcrForSupplier error:', e);
+    return null;
   }
 }
 
@@ -7983,7 +8065,9 @@ function printReport() {
         document.head.appendChild(replyStyle);
 
         async function initReplyMode() {
-            const ncr = ncrList.find(n => n.id === ncrId);
+            // โหลด NCR สำหรับ Supplier โดยตรง (ไม่ผ่าน auth)
+            let ncr = ncrList.find(n => n.id === ncrId);
+            if (!ncr) ncr = await loadNcrForSupplier(ncrId);
             if (ncr) {
                 // แสดงหน้าฟอร์ม
                 if (typeof showPage === 'function') showPage('new-ncr');
@@ -8000,6 +8084,7 @@ function printReport() {
 
                 // เติมข้อมูลและ Disable ฟิลด์ที่ไม่ให้แก้
                 const fields = {
+                    'doc-type': ncr.id && ncr.id.startsWith('NCRW') ? 'NCRW' : 'NCR',
                     'doc-number': ncr.id,
                     'doc-date': ncr.date,
                     'bp-input': ncr.bp,
@@ -8041,16 +8126,27 @@ function printReport() {
                     document.getElementById('reply-save-btn').onclick = async function() {
                         const rootCause = document.getElementById('root-cause').value;
                         if (!rootCause) { alert('กรุณาระบุสาเหตุของปัญหา (Root Cause)'); return; }
-                        const idx = ncrList.findIndex(n => n.id === ncrId);
-                        if (idx === -1) { alert('ไม่พบข้อมูล NCR'); return; }
-                        ncrList[idx].rootCause = rootCause;
-                        ncrList[idx].status = 'waiting-audit';
-                        ncrList[idx].updatedAt = new Date().toISOString();
-                        await saveData();
-                        document.getElementById('reply-save-btn').disabled = true;
-                        document.getElementById('reply-save-btn').textContent = '✅ ส่งแล้ว';
-                        document.getElementById('reply-ok').style.display = 'inline';
-                        alert('ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ');
+
+                        const btn = document.getElementById('reply-save-btn');
+                        btn.disabled = true;
+                        btn.textContent = '⏳ กำลังส่ง...';
+
+                        // บันทึกไปที่ /supplierReply path เท่านั้น (ไม่แตะ ncrList)
+                        const ok = await saveSupplierReplyToPath(ncrId, {
+                          supplierReply: rootCause,
+                          status: 'waiting-audit',
+                          updatedAt: new Date().toISOString()
+                        });
+
+                        if (ok) {
+                          btn.textContent = '✅ ส่งแล้ว';
+                          document.getElementById('reply-ok').style.display = 'inline';
+                          alert('ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ');
+                        } else {
+                          btn.disabled = false;
+                          btn.textContent = '💾 ส่งข้อมูลตอบกลับ';
+                          alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+                        }
                     };
                 }
             } else {
@@ -8120,330 +8216,117 @@ function printReport() {
 })();
 
 
-// ==================== PIN SECURITY ====================
-const PIN_KEY = 'ncr_pin_hash';
-const SESSION_KEY = 'ncr_session';
-const DEFAULT_PIN = '123456';
+// ==================== FIREBASE AUTH ====================
+let currentUser = null;
+let authToken   = null;
 
-function hashPin(pin) {
-  // Simple hash - XOR + base encode (no external lib needed)
-  let h = 0;
-  for (let i = 0; i < pin.length; i++) h = (Math.imul(31, h) + pin.charCodeAt(i)) | 0;
-  return 'ph_' + Math.abs(h).toString(36) + '_' + pin.length;
+// Init Firebase app (ถ้ายังไม่ได้ init)
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
 }
+const fbAuth = firebase.auth();
 
-function getSavedPin() {
-  return localStorage.getItem(PIN_KEY) || hashPin(DEFAULT_PIN);
-}
-
-function isSessionValid() {
-  const t = sessionStorage.getItem(SESSION_KEY);
-  return false; // ต้องกรอก PIN ทุกครั้งที่เปิดหน้าเว็บ
-}
-
-let pinInput = '';
-
-function initPinOverlay() {
-  // แสดง PIN overlay เสมอทุกครั้งที่โหลดหน้า
-  const overlay = document.getElementById('pin-overlay');
-  overlay.classList.remove('hidden');
-  overlay.style.display = 'flex';
-  pinInput = '';
-  updatePinDots();
-}
-
-function pinPress(d) {
-  if (pinInput.length >= 6) return;
-  pinInput += d;
-  updatePinDots();
-  if (pinInput.length === 6) {
-    setTimeout(checkPin, 100);
-  }
-}
-
-function pinDel() {
-  pinInput = pinInput.slice(0, -1);
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-}
-
-function pinClear() {
-  pinInput = '';
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-}
-
-function updatePinDots() {
-  for (let i = 0; i < 6; i++) {
-    document.getElementById('pd' + i).classList.toggle('filled', i < pinInput.length);
-  }
-}
-
-function checkPin() {
-  if (hashPin(pinInput) === getSavedPin()) {
-    const overlay = document.getElementById('pin-overlay');
-    overlay.style.display = 'none';
-    overlay.classList.add('hidden');
+// ดักจับ auth state เปลี่ยนแปลง
+fbAuth.onAuthStateChanged(async function(user) {
+  if (user) {
+    currentUser = user;
+    authToken   = await user.getIdToken();
+    // refresh token ทุก 55 นาที (token หมดอายุทุก 60 นาที)
+    setInterval(async () => {
+      authToken = await user.getIdToken(true);
+    }, 55 * 60 * 1000);
   } else {
-    document.getElementById('pin-error').textContent = '❌ PIN ไม่ถูกต้อง กรุณาลองใหม่';
-    document.getElementById('pin-dots').classList.add('pin-shake');
-    setTimeout(() => {
-      document.getElementById('pin-dots').classList.remove('pin-shake');
-      pinInput = '';
-      updatePinDots();
-    }, 400);
-  }
-}
-
-// Keyboard support
-document.addEventListener('keydown', function(e) {
-  if (document.getElementById('pin-overlay').classList.contains('hidden')) return;
-  if (e.key >= '0' && e.key <= '9') pinPress(e.key);
-  else if (e.key === 'Backspace') pinDel();
-  else if (e.key === 'Escape') pinClear();
-});
-
-function openChangePinModal() {
-  document.getElementById('pin-old').value = '';
-  document.getElementById('pin-new1').value = '';
-  document.getElementById('pin-new2').value = '';
-  document.getElementById('change-pin-error').textContent = '';
-  document.getElementById('change-pin-modal').classList.add('show');
-}
-
-function doChangePin() {
-  const old = document.getElementById('pin-old').value.trim();
-  const n1  = document.getElementById('pin-new1').value.trim();
-  const n2  = document.getElementById('pin-new2').value.trim();
-  const errEl = document.getElementById('change-pin-error');
-
-  if (hashPin(old) !== getSavedPin()) { errEl.textContent = '❌ PIN ปัจจุบันไม่ถูกต้อง'; return; }
-  if (!/^\d{6}$/.test(n1))           { errEl.textContent = '❌ PIN ใหม่ต้องเป็นตัวเลข 6 หลัก'; return; }
-  if (n1 !== n2)                       { errEl.textContent = '❌ PIN ใหม่ไม่ตรงกัน'; return; }
-
-  localStorage.setItem(PIN_KEY, hashPin(n1));
-  closeModal('change-pin-modal');
-  showAlert('✅ เปลี่ยน PIN เรียบร้อยแล้ว');
-}
-
-// ==================== EXPORT ====================
-function openExportModal() {
-  // Set default dates: first day of current month to today
-  const today = new Date();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-  document.getElementById('export-date-from').value = firstDay.toISOString().slice(0,10);
-  document.getElementById('export-date-to').value = today.toISOString().slice(0,10);
-  updateExportCount();
-  document.getElementById('export-modal').classList.add('show');
-}
-
-function toggleExportAll(cb) {
-  document.querySelectorAll('.exp-status').forEach(el => el.checked = cb.checked);
-  updateExportCount();
-}
-
-function updateExportCount() {
-  document.getElementById('export-count').textContent = getFilteredExport().length;
-}
-
-// Update count when filters change
-document.addEventListener('change', function(e) {
-  if (['export-date-from','export-date-to','exp-type-ncr','exp-type-ncrw'].includes(e.target.id) ||
-      e.target.classList.contains('exp-status')) {
-    updateExportCount();
-    // Sync "ทั้งหมด" checkbox
-    const allChecked = [...document.querySelectorAll('.exp-status')].every(el => el.checked);
-    document.getElementById('exp-all').checked = allChecked;
+    currentUser = null;
+    authToken   = null;
   }
 });
 
-function getFilteredExport() {
-  const from  = document.getElementById('export-date-from').value;
-  const to    = document.getElementById('export-date-to').value;
-  const statuses = [...document.querySelectorAll('.exp-status:checked')].map(el => el.value);
-  const wantNCR  = document.getElementById('exp-type-ncr').checked;
-  const wantNCRW = document.getElementById('exp-type-ncrw').checked;
+async function getToken() {
+  if (currentUser) authToken = await currentUser.getIdToken();
+  return authToken || '';
+}
 
-  return ncrList.filter(n => {
-    if (from && n.date < from) return false;
-    if (to   && n.date > to)   return false;
-    if (!statuses.includes(n.status)) return false;
-    const isNCRW = n.id && n.id.startsWith('NCRW');
-    if (isNCRW && !wantNCRW) return false;
-    if (!isNCRW && !wantNCR) return false;
-    return true;
+function initAuthOverlay() {
+  // ถ้าเป็น reply mode ข้ามการ login
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('mode') === 'reply') {
+    document.getElementById('auth-overlay').style.display = 'none';
+    document.getElementById('auth-overlay').classList.add('hidden');
+    return;
+  }
+  // แสดง overlay เสมอ รอ onAuthStateChanged ตัดสิน
+  fbAuth.onAuthStateChanged(async function(user) {
+    if (user) {
+      // Login อยู่แล้ว — ซ่อน overlay แสดง UI
+      document.getElementById('auth-overlay').style.display = 'none';
+      document.getElementById('auth-overlay').classList.add('hidden');
+      document.getElementById('nav-user-bar').style.display = 'flex';
+      document.getElementById('nav-user-email').textContent = user.email;
+    } else {
+      // ยังไม่ได้ login — แสดง overlay
+      const overlay = document.getElementById('auth-overlay');
+      overlay.style.display = 'flex';
+      overlay.classList.remove('hidden');
+    }
   });
 }
 
-const STATUS_TH = {open:'เปิดใหม่','waiting-reply':'รอตอบกลับ','waiting-audit':'รอตรวจติดตาม',closed:'ปิดแล้ว'};
+async function doLogin() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  const btn   = document.getElementById('auth-submit-btn');
 
-const EXPORT_COLS = [
-  {key:'id',            label:'เลขที่เอกสาร'},
-  {key:'date',          label:'วันที่ออกเอกสาร'},
-  {key:'ncType',        label:'ประเภท'},
-  {key:'bp',            label:'บริษัท/หน่วยงาน'},
-  {key:'dept',          label:'แผนก'},
-  {key:'subject',       label:'เรื่อง'},
-  {key:'ncName',        label:'ชื่อสิ่งที่ NC'},
-  {key:'productCode',   label:'รหัสสินค้า'},
-  {key:'refDoc',        label:'เลขอ้างอิง'},
-  {key:'defectDetail',  label:'รายละเอียดข้อบกพร่อง'},
-  {key:'reporter',      label:'ผู้รายงาน'},
-  {key:'reviewer',      label:'ผู้ทบทวน'},
-  {key:'status',        label:'สถานะ', fmt: v => STATUS_TH[v] || v},
-  {key:'supplierReply', label:'สาเหตุ (Root Cause)'},
-  {key:'supplierCA',    label:'การแก้ไข (Corrective Action)'},
-  {key:'supplierPreventive', label:'การป้องกัน (Preventive Action)'},
-  {key:'supplierPerson',     label:'ผู้รับผิดชอบ Supplier'},
-  {key:'supplierPosition',   label:'ตำแหน่ง'},
-  {key:'actionStartDate',    label:'วันที่เริ่มดำเนินการ'},
-  {key:'actionDuration',     label:'ระยะเวลา'},
-  {key:'auditDueDate',       label:'กำหนดตรวจ'},
-  {key:'auditResult',        label:'ผลการตรวจ'},
-  {key:'auditor',            label:'ผู้ตรวจ'},
-  {key:'auditorSignDate',    label:'วันที่ตรวจ'},
-  {key:'closureResult',      label:'ผลปิด NCR', fmt: v => v==='accept'?'ยอมรับ':v==='reject'?'ไม่ยอมรับ':''},
-  {key:'qmr',                label:'QMR'},
-  {key:'closureDate',        label:'วันที่ปิด'},
-  {key:'remark',             label:'หมายเหตุ'},
-];
+  if (!email || !pass) { errEl.textContent = 'กรุณากรอก Email และ Password'; return; }
 
-function doExport(type) {
-  const rows = getFilteredExport();
-  if (!rows.length) { alert('ไม่มีข้อมูลที่ตรงกับเงื่อนไข'); return; }
+  btn.disabled = true;
+  btn.textContent = 'กำลังเข้าสู่ระบบ...';
+  errEl.textContent = '';
 
-  if (type === 'csv') exportCSV(rows);
-  else if (type === 'xlsx') exportXLSX(rows);
-  else if (type === 'pdf') exportPDF(rows);
-}
-
-// ---- CSV ----
-function exportCSV(rows) {
-  const header = EXPORT_COLS.map(c => '"' + c.label + '"').join(',');
-  const body   = rows.map(n =>
-    EXPORT_COLS.map(c => {
-      let v = n[c.key] || '';
-      if (c.fmt) v = c.fmt(v);
-      return '"' + String(v).replace(/"/g, '""') + '"';
-    }).join(',')
-  ).join('\n');
-
-  const bom  = '\uFEFF';
-  const blob = new Blob([bom + header + '\n' + body], {type:'text/csv;charset=utf-8'});
-  downloadBlob(blob, 'NCR_Export_' + todayStr() + '.csv');
-}
-
-// ---- XLSX (using SheetJS from CDN) ----
-function exportXLSX(rows) {
-  if (typeof XLSX === 'undefined') {
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-    s.onload = () => _doXLSX(rows);
-    document.head.appendChild(s);
-  } else {
-    _doXLSX(rows);
+  try {
+    const cred = await fbAuth.signInWithEmailAndPassword(email, pass);
+    authToken  = await cred.user.getIdToken();
+    // โหลดข้อมูลหลัง login สำเร็จ
+    await loadData();
+    document.getElementById('fb-loading').style.display = 'none';
+    initForm(); renderSettings(); renderList(); updateDashboard();
+    document.getElementById('auth-overlay').style.display = 'none';
+    document.getElementById('auth-overlay').classList.add('hidden');
+    document.getElementById('nav-user-bar').style.display = 'flex';
+    document.getElementById('nav-user-email').textContent = cred.user.email;
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'เข้าสู่ระบบ';
+    const msgs = {
+      'auth/user-not-found':  '❌ ไม่พบบัญชีนี้ในระบบ',
+      'auth/wrong-password':  '❌ Password ไม่ถูกต้อง',
+      'auth/invalid-email':   '❌ รูปแบบ Email ไม่ถูกต้อง',
+      'auth/too-many-requests':'❌ พยายามเข้าสู่ระบบบ่อยเกินไป กรุณารอสักครู่',
+      'auth/invalid-credential': '❌ Email หรือ Password ไม่ถูกต้อง',
+    };
+    errEl.textContent = msgs[e.code] || ('❌ เกิดข้อผิดพลาด: ' + e.message);
   }
 }
 
-function _doXLSX(rows) {
-  const wsData = [
-    EXPORT_COLS.map(c => c.label),
-    ...rows.map(n => EXPORT_COLS.map(c => {
-      let v = n[c.key] || '';
-      if (c.fmt) v = c.fmt(v);
-      return v;
-    }))
-  ];
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
+// Enter key submit
+document.addEventListener('keydown', function(e) {
+  const overlay = document.getElementById('auth-overlay');
+  if (!overlay.classList.contains('hidden') && e.key === 'Enter') doLogin();
+});
 
-  // Column widths
-  ws['!cols'] = EXPORT_COLS.map((c, i) => ({
-    wch: [8,12,12,22,14,18,18,18,14,30,12,12,12,30,30,30,16,12,14,12,14,20,12,12,10,10,12,18][i] || 14
-  }));
-
-  // Header style (row 0)
-  const range = XLSX.utils.decode_range(ws['!ref']);
-  for (let C = range.s.c; C <= range.e.c; C++) {
-    const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
-    if (cell) {
-      cell.s = { font:{bold:true, color:{rgb:'FFFFFF'}}, fill:{fgColor:{rgb:'1a1d27'}}, alignment:{horizontal:'center'} };
-    }
-  }
-
-  XLSX.utils.book_append_sheet(wb, ws, 'NCR Data');
-  XLSX.writeFile(wb, 'NCR_Export_' + todayStr() + '.xlsx');
-}
-
-// ---- PDF ----
-function exportPDF(rows) {
-  const statusLabels = {'open':'🔴 เปิดใหม่','waiting-reply':'🟡 รอตอบกลับ','waiting-audit':'🔵 รอตรวจติดตาม','closed':'🟢 ปิดแล้ว'};
-  const from = document.getElementById('export-date-from').value;
-  const to   = document.getElementById('export-date-to').value;
-
-  const tableRows = rows.map(n => `
-    <tr>
-      <td>${n.id||''}</td>
-      <td>${n.date||''}</td>
-      <td>${n.bp||''}</td>
-      <td>${n.ncType||''}</td>
-      <td>${(n.defectDetail||'').slice(0,60)}${(n.defectDetail||'').length>60?'...':''}</td>
-      <td>${STATUS_TH[n.status]||n.status||''}</td>
-      <td>${n.reporter||''}</td>
-      <td>${n.closureDate||''}</td>
-    </tr>
-  `).join('');
-
-  const html = `<!DOCTYPE html><html><head>
-  <meta charset="UTF-8">
-  <title>NCR Export Report</title>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    body{font-family:'Sarabun',sans-serif;font-size:11px;color:#111;margin:20px}
-    h2{font-size:16px;margin-bottom:4px;color:#c00}
-    .sub{color:#555;font-size:10px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse;font-size:10px}
-    th{background:#1a1d27;color:#fff;padding:6px 8px;text-align:left;font-weight:600}
-    td{padding:5px 8px;border-bottom:1px solid #e0e0e0;vertical-align:top}
-    tr:nth-child(even) td{background:#f9f9f9}
-    .footer{margin-top:16px;font-size:9px;color:#999;text-align:right}
-    @page{size:A4 landscape;margin:12mm}
-  </style></head><body>
-  <h2>📋 รายงาน NCR Export</h2>
-  <div class="sub">ช่วงวันที่: ${from||'-'} ถึง ${to||'-'} &nbsp;|&nbsp; จำนวน: ${rows.length} รายการ &nbsp;|&nbsp; วันที่ Export: ${new Date().toLocaleDateString('th-TH')}</div>
-  <table>
-    <thead><tr>
-      <th>เลขที่</th><th>วันที่</th><th>บริษัท/หน่วยงาน</th><th>ประเภท</th>
-      <th>รายละเอียดข้อบกพร่อง</th><th>สถานะ</th><th>ผู้รายงาน</th><th>วันที่ปิด</th>
-    </tr></thead>
-    <tbody>${tableRows}</tbody>
-  </table>
-  <div class="footer">Generated by NCR Online System — ${new Date().toLocaleString('th-TH')}</div>
-  <script>window.onload=()=>setTimeout(()=>{window.print();},500)<\/script>
-  </body></html>`;
-
-  const win = window.open('','_blank','width=1000,height=700');
-  win.document.write(html);
-  win.document.close();
-}
-
-// ---- Helper ----
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a   = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-function todayStr() {
-  return new Date().toISOString().slice(0,10).replace(/-/g,'');
+async function doLogout() {
+  if (!confirm('ต้องการออกจากระบบ?')) return;
+  await fbAuth.signOut();
+  document.getElementById('nav-user-bar').style.display = 'none';
+  const overlay = document.getElementById('auth-overlay');
+  overlay.style.display = 'flex';
+  overlay.classList.remove('hidden');
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+  document.getElementById('auth-error').textContent = '';
 }
 
 // PIN initialized in window.onload
-
 </script>
   <!-- Firebase Loading Overlay -->
   <div id="fb-loading" style="position:fixed;inset:0;background:rgba(15,17,23,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
@@ -8453,61 +8336,22 @@ function todayStr() {
   </div>
 
 
-<!-- ===== PIN LOGIN OVERLAY ===== -->
-<div id="pin-overlay">
-  <div class="pin-box">
-    <div class="pin-logo">🔒</div>
-    <div class="pin-title">NCR Online</div>
-    <div class="pin-sub">กรอก PIN 6 หลัก เพื่อเข้าใช้งาน</div>
-    <div class="pin-dots" id="pin-dots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
-      <div class="pin-dot" id="pd4"></div>
-      <div class="pin-dot" id="pd5"></div>
+<!-- ===== AUTH LOGIN OVERLAY ===== -->
+<div id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">🔒</div>
+    <div class="auth-title">NCR Online</div>
+    <div class="auth-sub">เข้าสู่ระบบด้วย Email ของบริษัท</div>
+    <div class="auth-field">
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="example@company.com" autocomplete="email">
     </div>
-    <div class="pin-pad">
-      <button class="pin-btn" onclick="pinPress('1')">1</button>
-      <button class="pin-btn" onclick="pinPress('2')">2</button>
-      <button class="pin-btn" onclick="pinPress('3')">3</button>
-      <button class="pin-btn" onclick="pinPress('4')">4</button>
-      <button class="pin-btn" onclick="pinPress('5')">5</button>
-      <button class="pin-btn" onclick="pinPress('6')">6</button>
-      <button class="pin-btn" onclick="pinPress('7')">7</button>
-      <button class="pin-btn" onclick="pinPress('8')">8</button>
-      <button class="pin-btn" onclick="pinPress('9')">9</button>
-      <button class="pin-btn del" onclick="pinClear()">ล้าง</button>
-      <button class="pin-btn" onclick="pinPress('0')">0</button>
-      <button class="pin-btn del" onclick="pinDel()">⌫</button>
+    <div class="auth-field">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="รหัสผ่าน" autocomplete="current-password">
     </div>
-    <div class="pin-error" id="pin-error"></div>
-  </div>
-</div>
-
-<!-- ===== CHANGE PIN MODAL ===== -->
-<div class="modal-overlay" id="change-pin-modal">
-  <div class="modal" style="max-width:380px">
-    <div class="modal-header">
-      <div class="modal-title">🔑 เปลี่ยน PIN</div>
-      <button class="modal-close" onclick="closeModal('change-pin-modal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group" style="margin-bottom:14px">
-        <label>PIN ปัจจุบัน (4 หลัก)</label>
-        <input type="password" id="pin-old" maxlength="6" placeholder="กรอก PIN เดิม" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
-      </div>
-      <div class="form-group" style="margin-bottom:14px">
-        <label>PIN ใหม่ (4 หลัก)</label>
-        <input type="password" id="pin-new1" maxlength="6" placeholder="กรอก PIN ใหม่" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
-      </div>
-      <div class="form-group" style="margin-bottom:20px">
-        <label>ยืนยัน PIN ใหม่</label>
-        <input type="password" id="pin-new2" maxlength="6" placeholder="กรอก PIN ใหม่อีกครั้ง" style="letter-spacing:6px;font-size:1.2rem;text-align:center">
-      </div>
-      <div id="change-pin-error" style="color:var(--danger);font-size:.85rem;margin-bottom:12px;min-height:18px"></div>
-      <button class="btn btn-primary" onclick="doChangePin()">💾 บันทึก PIN ใหม่</button>
-    </div>
+    <button class="auth-submit" id="auth-submit-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="auth-error" id="auth-error"></div>
   </div>
 </div>
 
