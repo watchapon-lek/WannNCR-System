@@ -607,102 +607,11 @@
     </div>
   </div>
 
-  <!-- Section 6: Root Cause / Corrective / Preventive (Excel Row 22-23: การหาสาเหตุ) -->
-  <div class="card">
-    <div class="section-label">การหาสาเหตุ / แก้ไข / ป้องกัน (Root Cause / Corrective &amp; Preventive Action)</div>
-    <div class="form-group">
-      <label>สาเหตุของปัญหา</label>
-      <textarea id="root-cause" rows="3" placeholder="ระบุสาเหตุของปัญหา..."></textarea>
-    </div>
-  </div>
 
-  <!-- Section 7: Corrective Action checkboxes (Excel Row 28-29: รายละเอียดการแก้ไข) -->
-  <div class="card">
-    <div class="section-label">รายละเอียดการแก้ไข</div>
-    <div class="form-group">
-      <label>ประเภทการดำเนินการ</label>
-      <div class="checkbox-group" style="flex-wrap:wrap;gap:20px">
-        <label class="checkbox-item">
-          <input type="checkbox" id="action-return">
-          <span>ส่งคืน (Return)</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="checkbox" id="action-special">
-          <span>เจรจาต่อกรณีพิเศษ (Special Lot)</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="checkbox" id="action-rework">
-          <span>ทำการแก้ไข (Rework)</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="checkbox" id="action-destroy">
-          <span>ทำลาย (Destroy)</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="checkbox" id="action-other" onchange="toggleOtherAction(this)">
-          <span>อื่นๆ (ระบุ)</span>
-        </label>
-        <input type="text" id="action-other-text" placeholder="ระบุ..." style="max-width:200px;display:none">
-      </div>
-    </div>
-  </div>
 
-  <!-- Section 8: Preventive details (Excel Row 33: รายละเอียดการป้องกัน) -->
-  <div class="card">
-    <div class="section-label">รายละเอียดการป้องกัน</div>
-    <div class="form-group">
-      <label>การตรวจติดตามผลการแก้ไข และการป้องกัน</label>
-      <textarea id="audit-result" rows="3" placeholder="บันทึกผลการตรวจติดตาม..."></textarea>
-    </div>
-  </div>
 
-  <!-- Section 9: Timeline / Responsible (Excel Row 38-40: ระยะเวลา / ผู้รับผิดชอบ) -->
-  <div class="card">
-    <div class="section-label">ระยะเวลาดำเนินการและผู้รับผิดชอบ</div>
-    <div class="form-grid form-grid-3">
-      <div class="form-group">
-        <label>วันที่จะเริ่มดำเนินการ</label>
-        <input type="date" id="action-start-date">
-      </div>
-      <div class="form-group">
-        <label>ระยะเวลาดำเนินการ</label>
-        <input type="text" id="action-duration" placeholder="เช่น 7 วัน / 2 สัปดาห์">
-      </div>
-      <div class="form-group">
-        <label>กำหนดตรวจติดตาม</label>
-        <input type="date" id="audit-date">
-      </div>
-    </div>
-  </div>
 
-  <!-- Section 10: Auditor (Excel Row 42-48: การตรวจติดตาม / ผู้ตรวจ) -->
-  <div class="card">
-    <div class="section-label">การตรวจติดตามผลการแก้ไข และการป้องกัน</div>
-    <div class="form-group">
-      <label>ผู้ตรวจ</label>
-      <select id="auditor-select"></select>
-    </div>
-  </div>
 
-  <!-- Section 11: NCR Close / Status (Excel Row 51-53: สรุปการปิด NCR) -->
-  <div class="card">
-    <div class="section-label">สรุปการปิด NCR และสถานะ</div>
-    <div class="form-grid form-grid-2">
-      <div class="form-group">
-        <label>สถานะ NCR <span class="req">*</span></label>
-        <select id="ncr-status">
-          <option value="open">🔴 เปิดใหม่</option>
-          <option value="waiting-reply">🟡 รอตอบกลับ</option>
-          <option value="waiting-audit">🔵 รอตรวจติดตาม</option>
-          <option value="closed">🟢 ปิดแล้ว</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>หมายเหตุ</label>
-        <input type="text" id="remark" placeholder="หมายเหตุเพิ่มเติม...">
-      </div>
-    </div>
-  </div>
 
   <!-- Section 12: Images -->
   <div class="card">
