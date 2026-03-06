@@ -6659,21 +6659,21 @@ async function saveNCR() {
     productCode: document.getElementById('product-code-input').value,
     refDoc: document.getElementById('ref-doc').value,
     defectDetail: defect,
-    rootCause: document.getElementById('root-cause').value,
-    actionReturn: document.getElementById('action-return').checked,
-    actionSpecial: document.getElementById('action-special').checked,
-    actionRework: document.getElementById('action-rework').checked,
-    actionDestroy: document.getElementById('action-destroy').checked,
-    actionOther: document.getElementById('action-other').checked ? document.getElementById('action-other-text').value : '',
-    actionStartDate: document.getElementById('action-start-date').value,
-    actionDuration: document.getElementById('action-duration').value,
-    auditDate: document.getElementById('audit-date').value,
-    auditResult: document.getElementById('audit-result').value,
-    reporter: document.getElementById('reporter-select').value,
-    reviewer: document.getElementById('reviewer-select').value,
-    auditor: document.getElementById('auditor-select').value,
-    status: document.getElementById('ncr-status').value,
-    remark: document.getElementById('remark').value,
+    rootCause: document.getElementById('root-cause') ? document.getElementById('root-cause').value : '',
+    actionReturn: document.getElementById('action-return') ? document.getElementById('action-return').checked : false,
+    actionSpecial: document.getElementById('action-special') ? document.getElementById('action-special').checked : false,
+    actionRework: document.getElementById('action-rework') ? document.getElementById('action-rework').checked : false,
+    actionDestroy: document.getElementById('action-destroy') ? document.getElementById('action-destroy').checked : false,
+    actionOther: document.getElementById('action-other') && document.getElementById('action-other').checked ? document.getElementById('action-other-text').value : '',
+    actionStartDate: document.getElementById('action-start-date') ? document.getElementById('action-start-date').value : '',
+    actionDuration: document.getElementById('action-duration') ? document.getElementById('action-duration').value : '',
+    auditDate: document.getElementById('audit-date') ? document.getElementById('audit-date').value : '',
+    auditResult: document.getElementById('audit-result') ? document.getElementById('audit-result').value : '',
+    reporter: document.getElementById('reporter-select') ? document.getElementById('reporter-select').value : '',
+    reviewer: document.getElementById('reviewer-select') ? document.getElementById('reviewer-select').value : '',
+    auditor: document.getElementById('auditor-select') ? document.getElementById('auditor-select').value : '',
+    status: document.getElementById('ncr-status') ? document.getElementById('ncr-status').value : 'open',
+    remark: document.getElementById('remark') ? document.getElementById('remark').value : '',
     images: uploadedImages.map(img => ({name: img.name, dataUrl: img.dataUrl})),
     createdAt: editingIndex >= 0 ? ncrList[editingIndex].createdAt : new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -7978,10 +7978,14 @@ function printReport() {
         replyStyle.innerHTML = `
             .topnav, .stats-grid, .nav-tabs, .btn-row, #page-ncr-list, #page-settings, #page-dashboard, .page-title, .page-subtitle { display: none !important; }
             #page-new-ncr { display: block !important; padding-top: 20px !important; }
+            #page-new-ncr .card { display: none !important; }
             .no-reply { display: none !important; }
             .reply-only { display: block !important; }
-            input:disabled, textarea:disabled, select:disabled { opacity: 0.7; cursor: not-allowed; background: var(--surface) !important; }
             .reply-header { background: var(--surface); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--accent2); }
+            .reply-info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+            .reply-info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+            .reply-info-label { font-size: .78rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+            .reply-info-value { font-size: .95rem; color: var(--text); font-weight: 500; }
         `;
         document.head.appendChild(replyStyle);
 
@@ -7994,38 +7998,37 @@ function printReport() {
                 if (typeof showPage === 'function') showPage('new-ncr');
                 
                 // เพิ่ม Header สำหรับ Reply Mode
-                const formPage = document.getElementById('page-new-ncr');
-                if (formPage && !document.getElementById('reply-notice')) {
+                const noticeFormPage = document.getElementById('page-new-ncr');
+                if (noticeFormPage && !document.getElementById('reply-notice')) {
                     const notice = document.createElement('div');
                     notice.id = 'reply-notice';
                     notice.className = 'reply-header';
-                    notice.innerHTML = `<h2 style="color: var(--accent2);">โหมดตอบกลับ NCR: ${ncrId}</h2><p>กรุณาระบุสาเหตุของปัญหา (Root Cause) และกดบันทึก</p>`;
-                    formPage.insertBefore(notice, formPage.firstChild);
+                    notice.innerHTML = `<h2 style="color:var(--accent2);margin:0 0 6px">📩 โหมดตอบกลับ NCR: ${ncrId}</h2><p style="margin:0;color:var(--text-muted);font-size:.88rem">กรุณากรอกข้อมูลตอบกลับให้ครบถ้วนแล้วกดส่ง</p>`;
+                    noticeFormPage.insertBefore(notice, noticeFormPage.firstChild);
                 }
 
-                // เติมข้อมูลและ Disable ฟิลด์ที่ไม่ให้แก้
-                const fields = {
-                    'doc-type': ncr.id && ncr.id.startsWith('NCRW') ? 'NCRW' : 'NCR',
-                    'doc-number': ncr.id,
-                    'doc-date': ncr.date,
-                    'bp-input': ncr.bp,
-                    'defect-detail': ncr.defectDetail,
-                    'root-cause': ncr.rootCause || '',
-                    'nc-type': ncr.ncType,
-                    'dept-select': ncr.dept,
-                    'subject': ncr.subject,
-                    'nc-name': ncr.ncName,
-                    'product-code-input': ncr.productCode,
-                    'ref-doc': ncr.refDoc,
-                    'ncr-status': ncr.status
-                };
-
-                for (let id in fields) {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.value = fields[id] || '';
-                        if (id !== 'root-cause') el.disabled = true;
-                    }
+                // แสดงข้อมูล NCR แบบ read-only card
+                const formPage = document.getElementById('page-new-ncr');
+                if (formPage && !document.getElementById('reply-info-block')) {
+                    const infoBlock = document.createElement('div');
+                    infoBlock.id = 'reply-info-block';
+                    const fmtDate = d => d ? d.split('-').reverse().join('/') : '-';
+                    infoBlock.innerHTML = `
+                      <div class="reply-info-card">
+                        <div style="color:var(--accent);font-weight:700;font-size:.9rem;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:8px">📋 ข้อมูล NCR</div>
+                        <div class="reply-info-row">
+                          <div><div class="reply-info-label">เลขที่เอกสาร</div><div class="reply-info-value">${ncr.id||'-'}</div></div>
+                          <div><div class="reply-info-label">วันที่</div><div class="reply-info-value">${fmtDate(ncr.date)}</div></div>
+                          <div><div class="reply-info-label">เรียน (บริษัท)</div><div class="reply-info-value">${ncr.bp||'-'}</div></div>
+                          <div><div class="reply-info-label">แผนก</div><div class="reply-info-value">${ncr.dept||'-'}</div></div>
+                          <div><div class="reply-info-label">เรื่อง</div><div class="reply-info-value">${ncr.subject||'-'}</div></div>
+                          <div><div class="reply-info-label">รหัสสินค้า</div><div class="reply-info-value">${ncr.productCode||'-'}</div></div>
+                        </div>
+                        <div><div class="reply-info-label">รายละเอียดข้อบกพร่อง</div>
+                        <div class="reply-info-value" style="white-space:pre-wrap;margin-top:4px;padding:10px;background:var(--surface2);border-radius:6px">${ncr.defectDetail||'-'}</div></div>
+                      </div>
+                    `;
+                    formPage.insertBefore(infoBlock, formPage.firstChild);
                 }
 
                 // สร้างฟอร์มตอบกลับครบทุก field เหมือน Step 2
