@@ -8112,40 +8112,99 @@ function printReport() {
                     }
                 }
 
-                // สร้างปุ่มบันทึกใหม่ต่อท้ายฟอร์ม
+                // สร้างฟอร์มตอบกลับครบทุก field เหมือน Step 2
                 if (!document.getElementById('reply-save-btn')) {
                     const formPage = document.getElementById('page-new-ncr');
-                    const btnDiv = document.createElement('div');
-                    btnDiv.style.cssText = 'padding:20px 0 40px 0;display:flex;gap:12px;align-items:center;';
-                    btnDiv.innerHTML = `
-                        <button id="reply-save-btn" style="
-                            background:#e84393;color:#fff;border:none;
-                            padding:14px 32px;border-radius:8px;
-                            font-size:1rem;font-weight:700;cursor:pointer;
-                            font-family:Sarabun,sans-serif;
-                        ">💾 ส่งข้อมูลตอบกลับ</button>
-                        <span id="reply-ok" style="color:#4caf50;display:none;font-size:.9rem">✅ ส่งเรียบร้อยแล้ว</span>
+                    const replyForm = document.createElement('div');
+                    replyForm.id = 'supplier-reply-form';
+                    replyForm.innerHTML = `
+                      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:8px">
+                        <div style="color:var(--accent);font-weight:700;font-size:1rem;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:10px">
+                          📝 ขั้นตอนที่ 2: กรอกข้อมูลตอบกลับ
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+                          <div>
+                            <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">วันที่ SUPPLIER ตอบกลับ</label>
+                            <input type="date" id="reply-supplier-date" style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif">
+                          </div>
+                          <div>
+                            <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">ผู้รับผิดชอบดำเนินการ (SUPPLIER)</label>
+                            <input type="text" id="reply-supplier-person" placeholder="ชื่อผู้รับผิดชอบ..." style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif">
+                          </div>
+                          <div>
+                            <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">ตำแหน่ง</label>
+                            <input type="text" id="reply-supplier-position" placeholder="ตำแหน่ง..." style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif">
+                          </div>
+                          <div>
+                            <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">วันที่จะเริ่มดำเนินการ</label>
+                            <input type="date" id="reply-action-start-date" style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif">
+                          </div>
+                          <div>
+                            <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">ระยะเวลาดำเนินการ</label>
+                            <input type="text" id="reply-action-duration" placeholder="เช่น 7 วัน / 2 สัปดาห์" style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif">
+                          </div>
+                          <div>
+                            <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">กำหนดตรวจติดตาม</label>
+                            <input type="date" id="reply-audit-due-date" style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif">
+                          </div>
+                          <div>
+                            <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">วันที่รับทราบแก้ไข</label>
+                            <input type="date" id="reply-fix-acknowledge-date" style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif">
+                          </div>
+                        </div>
+
+                        <div style="margin-bottom:14px">
+                          <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">สาเหตุของปัญหา (ROOT CAUSE) <span style="color:var(--accent)">*</span></label>
+                          <textarea id="reply-supplier-reply" rows="4" placeholder="ระบุสาเหตุของปัญหา..." style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif;resize:vertical"></textarea>
+                        </div>
+                        <div style="margin-bottom:14px">
+                          <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">รายละเอียดการแก้ไข (CORRECTIVE ACTION)</label>
+                          <textarea id="reply-supplier-ca" rows="4" placeholder="มาตรการแก้ไขที่ Supplier เสนอ..." style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif;resize:vertical"></textarea>
+                        </div>
+                        <div style="margin-bottom:20px">
+                          <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">รายละเอียดการป้องกัน (PREVENTIVE ACTION)</label>
+                          <textarea id="reply-supplier-preventive" rows="4" placeholder="มาตรการป้องกันการเกิดซ้ำ..." style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif;resize:vertical"></textarea>
+                        </div>
+
+                        <div style="display:flex;gap:12px;align-items:center">
+                          <button id="reply-save-btn" style="background:#e84393;color:#fff;border:none;padding:14px 32px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">
+                            💾 ส่งข้อมูลตอบกลับ
+                          </button>
+                          <span id="reply-ok" style="color:#4caf50;display:none;font-size:.9rem">✅ ส่งเรียบร้อยแล้ว</span>
+                        </div>
+                      </div>
                     `;
-                    formPage.appendChild(btnDiv);
+                    formPage.appendChild(replyForm);
 
                     document.getElementById('reply-save-btn').onclick = async function() {
-                        const rootCause = document.getElementById('root-cause').value;
+                        const rootCause = document.getElementById('reply-supplier-reply').value.trim();
                         if (!rootCause) { alert('กรุณาระบุสาเหตุของปัญหา (Root Cause)'); return; }
 
                         const btn = document.getElementById('reply-save-btn');
                         btn.disabled = true;
                         btn.textContent = '⏳ กำลังส่ง...';
 
-                        // บันทึกไปที่ /supplierReply path เท่านั้น (ไม่แตะ ncrList)
                         const ok = await saveSupplierReplyToPath(ncrId, {
-                          supplierReply: rootCause,
-                          status: 'waiting-audit',
-                          updatedAt: new Date().toISOString()
+                          supplierReplyDate:    document.getElementById('reply-supplier-date').value,
+                          supplierPerson:       document.getElementById('reply-supplier-person').value,
+                          supplierPosition:     document.getElementById('reply-supplier-position').value,
+                          actionStartDate:      document.getElementById('reply-action-start-date').value,
+                          actionDuration:       document.getElementById('reply-action-duration').value,
+                          auditDueDate:         document.getElementById('reply-audit-due-date').value,
+                          fixAcknowledgeDate:   document.getElementById('reply-fix-acknowledge-date').value,
+                          supplierReply:        rootCause,
+                          supplierCA:           document.getElementById('reply-supplier-ca').value,
+                          supplierPreventive:   document.getElementById('reply-supplier-preventive').value,
+                          status:               'waiting-audit',
+                          updatedAt:            new Date().toISOString()
                         });
 
                         if (ok) {
                           btn.textContent = '✅ ส่งแล้ว';
                           document.getElementById('reply-ok').style.display = 'inline';
+                          // ล็อคฟอร์มหลังส่งเรียบร้อย
+                          document.querySelectorAll('#supplier-reply-form input, #supplier-reply-form textarea').forEach(el => el.disabled = true);
                           alert('ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ');
                         } else {
                           btn.disabled = false;
