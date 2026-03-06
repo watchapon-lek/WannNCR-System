@@ -6966,6 +6966,27 @@ function viewNCR(idx) {
         </div>
       </div>
       <div class="form-group" style="margin-bottom:12px">
+        <label>ประเภทการดำเนินการ (Corrective Action Type)</label>
+        <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:6px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="modal-action-return" ${n.actionReturn?'checked':''}> ส่งคืน (Return)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="modal-action-special" ${n.actionSpecial?'checked':''}> เจรจาต่อกรณีพิเศษ (Special Lot)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="modal-action-rework" ${n.actionRework?'checked':''}> ทำการแก้ไข (Rework)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="modal-action-destroy" ${n.actionDestroy?'checked':''}> ทำลาย (Destroy)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="modal-action-other-chk" ${n.actionOther?'checked':''} onchange="document.getElementById('modal-action-other-text').style.display=this.checked?'inline-block':'none'"> อื่นๆ (ระบุ)
+          </label>
+          <input type="text" id="modal-action-other-text" placeholder="ระบุ..." value="${n.actionOther||''}" style="display:${n.actionOther?'inline-block':'none'};padding:4px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif;max-width:160px">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
         <label>สาเหตุของปัญหา (Root Cause)</label>
         <textarea id="modal-supplier-reply" rows="3" placeholder="กรอกสาเหตุที่ Supplier ระบุมา...">${n.supplierReply || n.rootCause || ''}</textarea>
       </div>
@@ -7071,6 +7092,12 @@ async function saveStep2(idx) {
   n.actionDuration    = document.getElementById('modal-action-duration').value;
   n.auditDueDate      = document.getElementById('modal-audit-due-date').value;
   n.fixAcknowledgeDate= document.getElementById('modal-fix-acknowledge-date').value;
+  const modalOtherChk = document.getElementById('modal-action-other-chk');
+  n.actionReturn  = document.getElementById('modal-action-return').checked;
+  n.actionSpecial = document.getElementById('modal-action-special').checked;
+  n.actionRework  = document.getElementById('modal-action-rework').checked;
+  n.actionDestroy = document.getElementById('modal-action-destroy').checked;
+  n.actionOther   = modalOtherChk && modalOtherChk.checked ? document.getElementById('modal-action-other-text').value : '';
   n.supplierReply     = document.getElementById('modal-supplier-reply').value;
   n.supplierCA        = document.getElementById('modal-supplier-ca').value;
   n.supplierPreventive= document.getElementById('modal-supplier-preventive').value;
