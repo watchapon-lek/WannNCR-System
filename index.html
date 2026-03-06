@@ -445,7 +445,9 @@
   <div class="page-title">📊 แดชบอร์ด</div>
   <div class="page-subtitle">สรุปสถานะการออก NCR ทั้งหมด</div>
 
-  <div class="stats-grid" id="stats-grid">
+  <!-- NCR Stats -->
+  <div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:8px;letter-spacing:.05em">NCR — ออกให้ Supplier (ภายนอก)</div>
+  <div class="stats-grid" id="stats-grid" style="margin-bottom:20px">
     <div class="stat-card stat-open">
       <div class="stat-num" id="stat-open">0</div>
       <div class="stat-label">🔴 เปิดใหม่</div>
@@ -460,6 +462,27 @@
     </div>
     <div class="stat-card stat-closed">
       <div class="stat-num" id="stat-closed">0</div>
+      <div class="stat-label">🟢 ปิดแล้ว</div>
+    </div>
+  </div>
+
+  <!-- NCRW Stats -->
+  <div style="font-size:.8rem;font-weight:700;color:var(--text-muted);margin-bottom:8px;letter-spacing:.05em">NCRW — ออกภายใน</div>
+  <div class="stats-grid" id="stats-grid-w" style="margin-bottom:24px">
+    <div class="stat-card stat-open">
+      <div class="stat-num" id="statw-open">0</div>
+      <div class="stat-label">🔴 เปิดใหม่</div>
+    </div>
+    <div class="stat-card stat-reply">
+      <div class="stat-num" id="statw-waiting-reply">0</div>
+      <div class="stat-label">🟡 รอตอบกลับ</div>
+    </div>
+    <div class="stat-card stat-audit">
+      <div class="stat-num" id="statw-waiting-audit">0</div>
+      <div class="stat-label">🔵 รอตรวจติดตาม</div>
+    </div>
+    <div class="stat-card stat-closed">
+      <div class="stat-num" id="statw-closed">0</div>
       <div class="stat-label">🟢 ปิดแล้ว</div>
     </div>
   </div>
@@ -6773,12 +6796,21 @@ function statusBadge(status) {
 }
 
 function updateDashboard() {
-  const counts = {open:0, 'waiting-reply':0, 'waiting-audit':0, closed:0};
-  ncrList.forEach(n => { if (counts[n.status] !== undefined) counts[n.status]++; });
-  document.getElementById('stat-open').textContent = counts['open'];
+  const counts  = {open:0, 'waiting-reply':0, 'waiting-audit':0, closed:0};
+  const countsW = {open:0, 'waiting-reply':0, 'waiting-audit':0, closed:0};
+  ncrList.forEach(n => {
+    const isW = n.id && n.id.startsWith('NCRW');
+    const target = isW ? countsW : counts;
+    if (target[n.status] !== undefined) target[n.status]++;
+  });
+  document.getElementById('stat-open').textContent          = counts['open'];
   document.getElementById('stat-waiting-reply').textContent = counts['waiting-reply'];
   document.getElementById('stat-waiting-audit').textContent = counts['waiting-audit'];
-  document.getElementById('stat-closed').textContent = counts['closed'];
+  document.getElementById('stat-closed').textContent        = counts['closed'];
+  document.getElementById('statw-open').textContent          = countsW['open'];
+  document.getElementById('statw-waiting-reply').textContent = countsW['waiting-reply'];
+  document.getElementById('statw-waiting-audit').textContent = countsW['waiting-audit'];
+  document.getElementById('statw-closed').textContent        = countsW['closed'];
 
   // Recent 5
   const tbody = document.getElementById('dashboard-tbody');
