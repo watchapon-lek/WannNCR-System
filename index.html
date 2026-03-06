@@ -417,6 +417,9 @@
     appId: "1:511185555587:web:5d09da42e2c2fd1fe40bb6",
     measurementId: "G-T0D5G56TC1"
   };
+  // Init Firebase ทันทีที่ SDK โหลดเสร็จ
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const fbAuth = firebase.auth();
 </script>
 </head>
 <body>
@@ -6477,33 +6480,36 @@ function generateDocNumber() {
 }
 
 function populateSelects() {
+  const fill = (id, opts, cur) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = opts;
+    if (cur) el.value = cur;
+  };
+
   // Reporter
   const rSel = document.getElementById('reporter-select');
-  const curR = rSel.value;
-  rSel.innerHTML = settings.reporters.map(r => `<option>${r}</option>`).join('');
-  if(curR) rSel.value = curR;
+  fill('reporter-select', settings.reporters.map(r=>`<option>${r}</option>`).join(''), rSel ? rSel.value : '');
 
   // Reviewer
   const rvSel = document.getElementById('reviewer-select');
-  const curRv = rvSel.value;
-  rvSel.innerHTML = settings.reviewers.map(r => `<option>${r}</option>`).join('');
-  if(curRv) rvSel.value = curRv;
+  fill('reviewer-select', settings.reviewers.map(r=>`<option>${r}</option>`).join(''), rvSel ? rvSel.value : '');
 
-  // Auditor (combined)
+  // Auditor (optional — อาจถูกลบออกจากฟอร์ม)
   const auSel = document.getElementById('auditor-select');
-  const curAu = auSel.value;
-  auSel.innerHTML = [...settings.reporters, ...settings.reviewers].filter((v,i,a)=>a.indexOf(v)===i).map(r=>`<option>${r}</option>`).join('');
-  if(curAu) auSel.value = curAu;
+  if (auSel) {
+    const curAu = auSel.value;
+    auSel.innerHTML = [...settings.reporters, ...settings.reviewers].filter((v,i,a)=>a.indexOf(v)===i).map(r=>`<option>${r}</option>`).join('');
+    if (curAu) auSel.value = curAu;
+  }
 
   // Dept
   const dSel = document.getElementById('dept-select');
-  const curD = dSel.value;
-  dSel.innerHTML = '<option value="">-- เลือกแผนก --</option>' + settings.depts.map(d=>`<option>${d}</option>`).join('');
-  if(curD) dSel.value = curD;
+  fill('dept-select', '<option value="">-- เลือกแผนก --</option>' + settings.depts.map(d=>`<option>${d}</option>`).join(''), dSel ? dSel.value : '');
 
   // Filter dept
   const fd = document.getElementById('filter-dept');
-  if(fd) {
+  if (fd) {
     fd.innerHTML = '<option value="">ทุกแผนก</option>' + settings.depts.map(d=>`<option>${d}</option>`).join('');
   }
 }
@@ -8193,12 +8199,6 @@ function printReport() {
 // ==================== FIREBASE AUTH ====================
 let currentUser = null;
 let authToken   = null;
-
-// Init Firebase app (ถ้ายังไม่ได้ init)
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-const fbAuth = firebase.auth();
 
 async function getToken() {
   if (currentUser) authToken = await currentUser.getIdToken();
