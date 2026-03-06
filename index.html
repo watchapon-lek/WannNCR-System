@@ -8106,6 +8106,28 @@ function printReport() {
                         </div>
 
                         <div style="margin-bottom:14px">
+                          <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:8px">ประเภทการดำเนินการ (CORRECTIVE ACTION TYPE)</label>
+                          <div style="display:flex;flex-wrap:wrap;gap:16px">
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+                              <input type="checkbox" id="reply-action-return" style="width:16px;height:16px;cursor:pointer"> ส่งคืน (Return)
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+                              <input type="checkbox" id="reply-action-special" style="width:16px;height:16px;cursor:pointer"> เจรจาต่อกรณีพิเศษ (Special Lot)
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+                              <input type="checkbox" id="reply-action-rework" style="width:16px;height:16px;cursor:pointer"> ทำการแก้ไข (Rework)
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+                              <input type="checkbox" id="reply-action-destroy" style="width:16px;height:16px;cursor:pointer"> ทำลาย (Destroy)
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem">
+                              <input type="checkbox" id="reply-action-other-chk" style="width:16px;height:16px;cursor:pointer" onchange="document.getElementById('reply-action-other-text').style.display=this.checked?'inline-block':'none'"> อื่นๆ (ระบุ)
+                            </label>
+                            <input type="text" id="reply-action-other-text" placeholder="ระบุ..." style="display:none;padding:4px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif;max-width:160px">
+                          </div>
+                        </div>
+
+                        <div style="margin-bottom:14px">
                           <label style="font-size:.8rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px">สาเหตุของปัญหา (ROOT CAUSE) <span style="color:var(--accent)">*</span></label>
                           <textarea id="reply-supplier-reply" rows="4" placeholder="ระบุสาเหตุของปัญหา..." style="width:100%;padding:10px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:Sarabun,sans-serif;resize:vertical"></textarea>
                         </div>
@@ -8136,7 +8158,13 @@ function printReport() {
                         btn.disabled = true;
                         btn.textContent = '⏳ กำลังส่ง...';
 
+                        const actionOtherChk = document.getElementById('reply-action-other-chk');
                         const ok = await saveSupplierReplyToPath(ncrId, {
+                          actionReturn:  document.getElementById('reply-action-return').checked,
+                          actionSpecial: document.getElementById('reply-action-special').checked,
+                          actionRework:  document.getElementById('reply-action-rework').checked,
+                          actionDestroy: document.getElementById('reply-action-destroy').checked,
+                          actionOther:   actionOtherChk.checked ? document.getElementById('reply-action-other-text').value : '',
                           supplierReplyDate:    document.getElementById('reply-supplier-date').value,
                           supplierPerson:       document.getElementById('reply-supplier-person').value,
                           supplierPosition:     document.getElementById('reply-supplier-position').value,
@@ -8156,6 +8184,7 @@ function printReport() {
                           document.getElementById('reply-ok').style.display = 'inline';
                           // ล็อคฟอร์มหลังส่งเรียบร้อย
                           document.querySelectorAll('#supplier-reply-form input, #supplier-reply-form textarea').forEach(el => el.disabled = true);
+                          document.querySelectorAll('#supplier-reply-form input[type=checkbox]').forEach(el => el.disabled = true);
                           alert('ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ');
                         } else {
                           btn.disabled = false;
