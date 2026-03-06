@@ -8145,56 +8145,7 @@ function printReport() {
         }
     }
 
-    // 7. เพิ่มปุ่ม QR Code ในตาราง List
-    const originalRenderList = window.renderList;
-    window.renderList = function() {
-        if (typeof originalRenderList === 'function') originalRenderList();
-        const tbody = document.getElementById('list-tbody');
-        if (tbody) {
-            const rows = tbody.querySelectorAll('tr');
-            rows.forEach((row) => {
-                const actionsCell = row.cells[row.cells.length - 1];
-                const btnGroup = actionsCell.querySelector('div');
-                const ncrIdElement = row.querySelector('.ncr-id');
-                if (!ncrIdElement || btnGroup.querySelector('.btn-qr')) return;
-
-                const ncrIdInRow = ncrIdElement.textContent;
-                const qrBtn = document.createElement('button');
-                qrBtn.className = 'btn btn-warning btn-xs btn-qr';
-                qrBtn.innerHTML = 'QR';
-                qrBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    showQRCodeModal(ncrIdInRow);
-                };
-                btnGroup.appendChild(qrBtn);
-            });
-        }
-    };
-
-    // 8. เพิ่มปุ่ม QR ใน Dashboard ด้วย
-    const originalUpdateDashboard = window.updateDashboard;
-    window.updateDashboard = function() {
-        if (typeof originalUpdateDashboard === 'function') originalUpdateDashboard();
-        const tbody = document.getElementById('dashboard-tbody');
-        if (tbody) {
-            const rows = tbody.querySelectorAll('tr');
-            rows.forEach((row) => {
-                const actionsCell = row.cells[row.cells.length - 1];
-                const ncrIdInRow = row.cells[0].textContent;
-                if (actionsCell && !actionsCell.querySelector('.btn-qr')) {
-                    const qrBtn = document.createElement('button');
-                    qrBtn.className = 'btn btn-warning btn-xs btn-qr';
-                    qrBtn.style.marginLeft = '4px';
-                    qrBtn.innerHTML = 'QR';
-                    qrBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        showQRCodeModal(ncrIdInRow);
-                    };
-                    actionsCell.appendChild(qrBtn);
-                }
-            });
-        }
-    };
+    // QR buttons removed
 
 })();
 
