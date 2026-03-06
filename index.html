@@ -355,9 +355,9 @@
   #auth-overlay {
     position: fixed; inset: 0; z-index: 99999;
     background: var(--bg);
-    display: none; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center;
   }
-  #auth-overlay.visible { display: flex; }
+  #auth-overlay.hidden { display: none !important; }
   .auth-box {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -6337,7 +6337,7 @@ window.onload = async function() {
 
   if (isReplyMode) {
     // ซ่อน auth overlay ทันที ก่อน Firebase SDK จะ trigger
-    document.getElementById('auth-overlay').classList.remove('visible');
+    document.getElementById('auth-overlay').classList.add('hidden');
   }
 
   setupAutocomplete('bp-input', 'bp-list', BP_NAMES, v => v, 200);
@@ -6349,8 +6349,9 @@ window.onload = async function() {
     document.getElementById('fb-loading').style.display = 'none';
     initForm();
   } else {
-    // Internal mode — รอ Firebase Auth ก่อน
+    // Internal mode — แสดง login overlay ทันที แล้วรอ Firebase Auth
     document.getElementById('fb-loading').style.display = 'none';
+    document.getElementById('auth-overlay').classList.remove('hidden');
     initAuthOverlay();
   }
 };
@@ -8207,25 +8208,20 @@ async function getToken() {
 function initAuthOverlay() {
   fbAuth.onAuthStateChanged(async function(user) {
     if (user) {
-      // Set token ก่อนทุกอย่าง
       currentUser = user;
-      authToken   = await user.getIdToken();
-      // refresh token ทุก 55 นาที
+      authToken   = await user.getIdToken(true); // force refresh
       setInterval(async () => {
-        authToken = await user.getIdToken(true);
+        if (currentUser) authToken = await currentUser.getIdToken(true);
       }, 55 * 60 * 1000);
-      // โหลดข้อมูลหลัง token พร้อมแล้ว
       await loadData();
       initForm(); renderSettings(); renderList(); updateDashboard();
-      document.getElementById('auth-overlay').classList.remove('visible');
+      document.getElementById('auth-overlay').classList.add('hidden');
       document.getElementById('nav-user-bar').style.display = 'flex';
       document.getElementById('nav-user-email').textContent = user.email;
     } else {
       currentUser = null;
       authToken   = null;
-      // ยังไม่ได้ login — แสดง overlay
-      const overlay = document.getElementById('auth-overlay');
-      overlay.classList.add('visible');
+      document.getElementById('auth-overlay').classList.remove('hidden');
     }
   });
 }
@@ -8271,7 +8267,7 @@ async function doLogout() {
   await fbAuth.signOut();
   document.getElementById('nav-user-bar').style.display = 'none';
   const overlay = document.getElementById('auth-overlay');
-  overlay.classList.add('visible');
+  overlay.classList.remove('hidden');
   document.getElementById('auth-email').value = '';
   document.getElementById('auth-password').value = '';
   document.getElementById('auth-error').textContent = '';
@@ -8288,7 +8284,7 @@ async function doLogout() {
 
 
 <!-- ===== AUTH LOGIN OVERLAY ===== -->
-<div id="auth-overlay">
+<div id="auth-overlay" class="hidden">
   <div class="auth-box">
     <div class="auth-logo">🔒</div>
     <div class="auth-title">NCR Online</div>
