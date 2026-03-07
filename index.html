@@ -7391,9 +7391,6 @@ function buildNCRFormHTML(n) {
         <div style="min-height:22px;white-space:pre-wrap">${line(n.defectDetail)}</div>
       </td>
     </tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:18px">&nbsp;</td></tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:18px">&nbsp;</td></tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:18px">&nbsp;</td></tr>
   </table>
 
   <!-- ===== ผู้รายงาน / ผู้ทบทวน ===== -->
@@ -7441,9 +7438,6 @@ function buildNCRFormHTML(n) {
         <div style="min-height:22px;white-space:pre-wrap">${line(n.supplierReply || n.rootCause)}</div>
       </td>
     </tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
   </table>
 
   <!-- ===== รายละเอียดการแก้ไข ===== -->
@@ -7461,8 +7455,6 @@ function buildNCRFormHTML(n) {
       </td>
     </tr>
     ${n.supplierCA ? `<tr><td style="width:12%;border:1px solid #333;border-top:none;padding:5px 10px;font-weight:700;vertical-align:top;font-size:11px">การแก้ไข</td><td style="border:1px solid #333;border-top:none;border-left:none;padding:5px 10px"><div style="min-height:22px;white-space:pre-wrap;font-size:12px">${line(n.supplierCA)}</div></td></tr>` : `<tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>`}
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
   </table>
 
   <!-- ===== รายละเอียดการป้องกัน ===== -->
@@ -7471,12 +7463,7 @@ function buildNCRFormHTML(n) {
       <td colspan="2" style="border:1px solid #333;border-top:none;padding:5px 10px;font-weight:700">รายละเอียดการป้องกัน</td>
     </tr>
     ${n.supplierPreventive ? `<tr><td style="width:12%;border:1px solid #333;border-top:none;padding:5px 10px;font-weight:700;vertical-align:top;font-size:11px">การป้องกัน</td><td style="border:1px solid #333;border-top:none;border-left:none;padding:5px 10px"><div style="min-height:22px;white-space:pre-wrap;font-size:12px">${line(n.supplierPreventive)}</div></td></tr>` : `<tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>`}
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
   </table>
-
-    
 
   <!-- กำหนดตรวจติดตาม / วันที่รับทราบ - แบบตารางแถว เหมือน ระยะเวลา -->
   <table style="width:100%;border-collapse:collapse">
@@ -7539,9 +7526,6 @@ function buildNCRFormHTML(n) {
         <div style="min-height:22px;white-space:pre-wrap">${line(n.auditResult)}</div>
       </td>
     </tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
-    <tr><td colspan="2" style="border:1px solid #333;border-top:none;padding:4px 10px;height:22px">&nbsp;</td></tr>
   </table>
 
   <!-- ผู้ตรวจ -->
