@@ -8208,17 +8208,23 @@ function printReport() {
                           updatedAt:            new Date().toISOString()
                         });
 
+                        const showReplyToast = (msg, color) => {
+                          const t = document.createElement('div');
+                          t.style.cssText = `position:fixed;top:24px;left:50%;transform:translateX(-50%);background:${color};color:#fff;padding:14px 28px;border-radius:10px;font-size:1rem;font-weight:600;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.25);font-family:Sarabun,sans-serif;text-align:center`;
+                          t.textContent = msg;
+                          document.body.appendChild(t);
+                          setTimeout(() => t.remove(), 3500);
+                        };
                         if (ok) {
                           btn.textContent = '✅ ส่งแล้ว';
                           document.getElementById('reply-ok').style.display = 'inline';
-                          // ล็อคฟอร์มหลังส่งเรียบร้อย
                           document.querySelectorAll('#supplier-reply-form input, #supplier-reply-form textarea').forEach(el => el.disabled = true);
                           document.querySelectorAll('#supplier-reply-form input[type=checkbox]').forEach(el => el.disabled = true);
-                          alert('ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ');
+                          showReplyToast('✅ ส่งข้อมูลตอบกลับเรียบร้อยแล้ว ขอบคุณครับ', '#4caf50');
                         } else {
                           btn.disabled = false;
                           btn.textContent = '💾 ส่งข้อมูลตอบกลับ';
-                          alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+                          showReplyToast('❌ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', '#e53935');
                         }
                     };
                 }
