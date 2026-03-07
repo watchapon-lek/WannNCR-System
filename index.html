@@ -7322,7 +7322,7 @@ function buildNCRFormHTML(n) {
   const sigImg = (name, w=200) => {
     const src = signatures[name];
     if (!src) return `<span style="border-bottom:1px solid #333;display:inline-block;width:${w}px;min-height:30px">&nbsp;</span>`;
-    return `<img src="${src}" style="max-width:${w}px;max-height:60px;object-fit:contain;display:block;margin:0 auto;border-bottom:1px solid #333">`;
+    return `<img src="${src}" style="max-width:${w}px;max-height:60px;object-fit:contain;display:block;margin:0 auto;border-bottom:1px solid #333;mix-blend-mode:multiply">`;
   };
 
 
@@ -7599,7 +7599,7 @@ function buildNCRFormHTML(n) {
           <tr>
             <td style="border:none;padding:2px 0;white-space:nowrap;width:55%">${chkBox(n.closureResult==='accept')} ยอมรับการแก้ไขและปิด NCR</td>
             <td style="border:none;padding:2px 0;white-space:nowrap">QMR &nbsp;<span style="display:inline-block;min-width:160px;vertical-align:bottom;text-align:center">
-              ${signatures[n.qmr] ? `<img src="${signatures[n.qmr]}" style="max-width:120px;max-height:40px;object-fit:contain;display:block;margin:0 auto;border-bottom:1px solid #333">` : `<span style="border-bottom:1px solid #333;display:block;min-height:24px">&nbsp;</span>`}
+              ${signatures[n.qmr] ? `<img src="${signatures[n.qmr]}" style="max-width:120px;max-height:40px;object-fit:contain;display:block;margin:0 auto;border-bottom:1px solid #333;mix-blend-mode:multiply">` : `<span style="border-bottom:1px solid #333;display:block;min-height:24px">&nbsp;</span>`}
               <span style="font-size:11px;font-weight:700">${line(n.qmr)}</span>
             </span></td>
           </tr>
