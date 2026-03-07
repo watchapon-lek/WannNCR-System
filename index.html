@@ -6416,7 +6416,7 @@ async function loadData() {
           const boolFields = ['actionReturn','actionSpecial','actionRework','actionDestroy'];
           textFields.forEach(f => { if (data[f]) ncrList[idx][f] = data[f]; });
           boolFields.forEach(f => { if (data[f] !== undefined) ncrList[idx][f] = data[f]; });
-          if (data.status) ncrList[idx].status = data.status;
+          // ไม่ merge status จาก supplierReply เพราะ status ต้องถูกจัดการโดย QC ใน ncrList เท่านั้น
           if (data.updatedAt) ncrList[idx].updatedAt = data.updatedAt;
         }
       });
