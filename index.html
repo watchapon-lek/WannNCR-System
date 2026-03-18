@@ -6497,12 +6497,12 @@ async function saveSupplierReplyToPath(ncrId, data) {
 
 // โหลดข้อมูล NCR สำหรับ Supplier (อ่านเฉพาะ NCR ที่ตรง ID จาก supplierReply path)
 async function loadNcrForSupplier(ncrId) {
-  // Supplier อ่านข้อมูลจาก supplierReply path ที่เปิด public
-  // และ ncrList ที่ rules อนุญาต read public (สำหรับแสดงรายละเอียด NCR)
   try {
     const res = await fetch(FB_URL + '/ncrList.json');
+    if (res.status === 401 || res.status === 403) return { __permissionDenied: true };
     if (!res.ok) return null;
     const all = await res.json();
+    if (all && all.error && all.error.toLowerCase().includes('permission')) return { __permissionDenied: true };
     const list = Array.isArray(all) ? all : Object.values(all || {});
     return list.find(n => n && n.id === ncrId) || null;
   } catch(e) {
@@ -8176,9 +8176,26 @@ function printReport() {
 
         let _replyRetry = 0;
         async function initReplyMode() {
-            // โหลด NCR สำหรับ Supplier โดยตรง (ไม่ผ่าน auth)
             let ncr = ncrList.find(n => n.id === ncrId);
             if (!ncr) ncr = await loadNcrForSupplier(ncrId);
+            // ถ้า Firebase Rules บล็อก public read — แสดงคำแนะนำทันที ไม่ต้อง retry
+            if (ncr && ncr.__permissionDenied) {
+                const _fp = document.getElementById('page-new-ncr');
+                if (_fp && !document.getElementById('reply-status-msg')) {
+                    const _sm = document.createElement('div');
+                    _sm.id = 'reply-status-msg';
+                    _sm.style.cssText = 'text-align:center;padding:48px 24px;font-family:Sarabun,sans-serif';
+                    _sm.innerHTML = '<div style="font-size:2.5rem;margin-bottom:14px">🔒</div>'
+                        + '<div style="color:var(--accent);font-size:1.05rem;font-weight:600">Firebase Rules ยังไม่อนุญาต Public Read</div>'
+                        + '<div style="color:var(--text-muted);font-size:.9rem;margin-top:10px;max-width:480px;margin-left:auto;margin-right:auto">'
+                        + 'กรุณาไปที่ Firebase Console → Realtime Database → Rules<br>'
+                        + 'แล้วเพิ่ม <code style="background:var(--surface2);padding:2px 6px;border-radius:4px">\"ncrList\": {\"read\": \"true\"}</code><br>'
+                        + 'ในส่วน rules เพื่อให้ Supplier เข้าถึงได้</div>'
+                        + '<div style="margin-top:20px"><button onclick="location.reload()" style="background:var(--accent);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:Sarabun,sans-serif">🔄 ลองใหม่</button></div>';
+                    _fp.appendChild(_sm);
+                }
+                return;
+            }
             if (ncr) {
                 // แสดงหน้าฟอร์ม
                 if (typeof showPage === 'function') showPage('new-ncr');
