@@ -8211,8 +8211,66 @@ function printReport() {
                         </div>
                         <div><div class="reply-info-label">รายละเอียดข้อบกพร่อง</div>
                         <div class="reply-info-value" style="white-space:pre-wrap;margin-top:4px;padding:10px;background:var(--surface2);border-radius:6px">${ncr.defectDetail||'-'}</div></div>
+                        ${(ncr.images && ncr.images.length) ? `
+                        <div style="margin-top:16px">
+                          <div class="reply-info-label" style="margin-bottom:10px">📷 รูปภาพประกอบ NCR (${ncr.images.length} รูป) — ดูได้อย่างเดียว</div>
+                          <div style="display:flex;flex-wrap:wrap;gap:10px">
+                            ${ncr.images.map((img, idx) => `
+                              <div style="position:relative;width:160px;height:130px;border-radius:8px;overflow:hidden;border:1px solid var(--border);cursor:pointer;flex-shrink:0"
+                                   onclick="openReplyImgViewer(${idx})"
+                                   title="คลิกเพื่อดูขนาดใหญ่">
+                                <img src="${img.dataUrl}" style="width:100%;height:100%;object-fit:cover;pointer-events:none">
+                                <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);color:#fff;font-size:.72rem;padding:4px 8px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap">${img.name||('รูปที่ '+(idx+1))}</div>
+                              </div>`).join('')}
+                          </div>
+                        </div>` : ''}
                       </div>
                     `;
+                    // Lightbox overlay สำหรับดูรูปขนาดใหญ่ (read-only)
+                    if (!document.getElementById('reply-img-viewer')) {
+                      const viewer = document.createElement('div');
+                      viewer.id = 'reply-img-viewer';
+                      viewer.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;align-items:center;justify-content:center;flex-direction:column';
+                      viewer.innerHTML = `
+                        <div style="position:relative;max-width:92vw;max-height:85vh;display:flex;align-items:center;justify-content:center">
+                          <img id="reply-img-viewer-img" style="max-width:90vw;max-height:82vh;border-radius:10px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.7)">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:16px;margin-top:14px">
+                          <button onclick="replyImgNav(-1)" style="background:rgba(255,255,255,.15);color:#fff;border:none;width:40px;height:40px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center">‹</button>
+                          <span id="reply-img-viewer-label" style="color:#fff;font-size:.85rem;min-width:80px;text-align:center;font-family:Sarabun,sans-serif"></span>
+                          <button onclick="replyImgNav(1)" style="background:rgba(255,255,255,.15);color:#fff;border:none;width:40px;height:40px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center">›</button>
+                        </div>
+                        <button onclick="closeReplyImgViewer()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,.15);color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;z-index:1">✕</button>
+                      `;
+                      viewer.addEventListener('click', function(e){ if(e.target===this) closeReplyImgViewer(); });
+                      document.body.appendChild(viewer);
+                    }
+                    // เก็บ images ไว้ใช้กับ Lightbox
+                    window._replyImages = ncr.images || [];
+                    window._replyImgIdx = 0;
+                    window.openReplyImgViewer = function(idx) {
+                      window._replyImgIdx = idx;
+                      const imgs = window._replyImages;
+                      document.getElementById('reply-img-viewer-img').src = imgs[idx].dataUrl;
+                      document.getElementById('reply-img-viewer-label').textContent = (idx+1)+' / '+imgs.length;
+                      const v = document.getElementById('reply-img-viewer');
+                      v.style.display = 'flex';
+                    };
+                    window.closeReplyImgViewer = function() {
+                      document.getElementById('reply-img-viewer').style.display = 'none';
+                    };
+                    window.replyImgNav = function(dir) {
+                      const imgs = window._replyImages;
+                      window._replyImgIdx = (window._replyImgIdx + dir + imgs.length) % imgs.length;
+                      document.getElementById('reply-img-viewer-img').src = imgs[window._replyImgIdx].dataUrl;
+                      document.getElementById('reply-img-viewer-label').textContent = (window._replyImgIdx+1)+' / '+imgs.length;
+                    };
+                    // ปิด Lightbox ด้วย Escape
+                    document.addEventListener('keydown', function(e){
+                      if(e.key==='Escape') closeReplyImgViewer();
+                      if(e.key==='ArrowLeft') { const v=document.getElementById('reply-img-viewer'); if(v&&v.style.display!=='none') replyImgNav(-1); }
+                      if(e.key==='ArrowRight') { const v=document.getElementById('reply-img-viewer'); if(v&&v.style.display!=='none') replyImgNav(1); }
+                    });
                     formPage.insertBefore(infoBlock, formPage.firstChild);
                 }
 
