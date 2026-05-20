@@ -817,6 +817,8 @@
 </div>
 
 <script>
+// ==================== FIREBASE CONFIG ====================
+// ⚠️ ใส่ค่า Firebase Config ของคุณที่นี่ (ดูจาก Firebase Console > Project Settings)
 const firebaseConfig = {
   apiKey: "AIzaSyCb-JFiYTbT2SufhimZZfxsLvsHq_t9wZQ",
   authDomain: "wann-ncr.firebaseapp.com",
@@ -826,8 +828,61 @@ const firebaseConfig = {
   messagingSenderId: "276399609294",
   appId: "1:276399609294:web:4847026f9292768f0ec79f"
 };
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+
+// ==================== FIREBASE INIT (with error handling) ====================
+let db = null, auth = null;
+let _firebaseOK = false;
+let _initErrors = [];
+
+function _showInitError(msg) {
+  const show = () => {
+    const el = document.getElementById('auth-error');
+    if (el) { el.innerHTML = msg; el.style.color = '#f44336'; }
+    const fb = document.getElementById('fb-loading');
+    if (fb) fb.style.display = 'none';
+    const ao = document.getElementById('auth-overlay');
+    if (ao) ao.classList.remove('hidden');
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', show);
+  } else {
+    show();
+  }
+  console.error('Firebase Init Error:', msg);
+}
+
+// ตรวจสอบว่าใส่ Config จริงหรือยัง
+if (firebaseConfig.apiKey.includes('PASTE_YOUR')) {
+  _showInitError('⚠️ ยังไม่ได้ใส่ Firebase Config!<br>กรุณาแก้ไขไฟล์ index.html → ค้นหา PASTE_YOUR แล้วแทนที่ด้วยค่าจริงจาก Firebase Console');
+} else {
+  // Init Firebase App
+  try {
+    firebase.initializeApp(firebaseConfig);
+  } catch(e) {
+    _initErrors.push('App: ' + e.message);
+  }
+
+  // Init Auth (แยกจาก Database — ถ้า DB พัง Auth ยังทำงานได้)
+  try {
+    auth = firebase.auth();
+  } catch(e) {
+    _initErrors.push('Auth: ' + e.message);
+  }
+
+  // Init Database
+  try {
+    db = firebase.database();
+  } catch(e) {
+    _initErrors.push('Database: ' + e.message);
+  }
+
+  if (_initErrors.length > 0) {
+    _showInitError('Firebase เชื่อมต่อไม่สมบูรณ์:<br>' + _initErrors.join('<br>'));
+  }
+
+  // ถือว่า OK ถ้า Auth ใช้ได้ (แม้ DB อาจยังมีปัญหา)
+  _firebaseOK = (auth !== null);
+}
 
 // ==================== DATA ====================
 let settings = { reporters: [], reviewers: [], depts: [], productCodes: [] };
@@ -852,6 +907,13 @@ const dbRef = {
 window.onload = async function() {
   const urlParams = new URLSearchParams(window.location.search);
   const isReplyMode = urlParams.get('mode') === 'reply';
+
+  // ถ้า Firebase ยัง init ไม่สำเร็จ → แสดงหน้า login พร้อม error
+  if (!_firebaseOK) {
+    document.getElementById('fb-loading').style.display = 'none';
+    document.getElementById('auth-overlay').classList.remove('hidden');
+    return;
+  }
 
   // ถ้าเป็น Supplier Reply Mode → ไม่ต้อง login
   if (isReplyMode) {
@@ -894,7 +956,13 @@ async function doLogin() {
   const errEl = document.getElementById('auth-error');
   const btn   = document.querySelector('.auth-submit');
 
-  if (!email || !pass) { errEl.textContent = 'กรุณากรอก Email และ Password'; return; }
+  // ตรวจสอบ Firebase Auth
+  if (!auth) {
+    errEl.innerHTML = '⚠️ Firebase Auth ยังไม่พร้อม<br>ตรวจสอบ: 1) Firebase Config ถูกต้อง 2) เปิด Authentication ใน Firebase Console';
+    errEl.style.color = '#f44336';
+    return;
+  }
+  if (!email || !pass) { errEl.textContent = 'กรุณากรอก Email และ Password'; errEl.style.color = '#f44336'; return; }
 
   btn.disabled = true;
   btn.textContent = 'กำลังเข้าสู่ระบบ...';
@@ -904,13 +972,17 @@ async function doLogin() {
     await auth.signInWithEmailAndPassword(email, pass);
   } catch(e) {
     const msgs = {
-      'auth/user-not-found': 'ไม่พบ Email นี้ในระบบ',
-      'auth/wrong-password': 'Password ไม่ถูกต้อง',
-      'auth/invalid-email': 'รูปแบบ Email ไม่ถูกต้อง',
-      'auth/too-many-requests': 'ล็อกอินผิดหลายครั้ง กรุณารอสักครู่',
-      'auth/invalid-credential': 'Email หรือ Password ไม่ถูกต้อง',
+      'auth/user-not-found': '❌ ไม่พบ Email นี้ในระบบ<br>→ ไป Firebase Console → Authentication → Add user',
+      'auth/wrong-password': '❌ Password ไม่ถูกต้อง',
+      'auth/invalid-email': '❌ รูปแบบ Email ไม่ถูกต้อง',
+      'auth/too-many-requests': '⏳ ล็อกอินผิดหลายครั้ง กรุณารอสักครู่',
+      'auth/invalid-credential': '❌ Email หรือ Password ไม่ถูกต้อง<br>→ ตรวจสอบว่าสร้าง User ใน Firebase Console แล้ว',
+      'auth/network-request-failed': '🌐 เชื่อมต่อ Firebase ไม่ได้<br>→ ตรวจสอบ Internet และ Firebase Config',
+      'auth/api-key-not-valid.-please-pass-a-valid-api-key.': '🔑 API Key ไม่ถูกต้อง<br>→ ตรวจสอบค่า apiKey ใน Firebase Config',
+      'auth/configuration-not-found': '⚙️ ยังไม่เปิด Authentication ใน Firebase<br>→ ไป Firebase Console → Build → Authentication → Get started → เปิด Email/Password',
     };
-    errEl.textContent = msgs[e.code] || ('เข้าสู่ระบบไม่สำเร็จ: ' + e.message);
+    errEl.innerHTML = msgs[e.code] || ('❌ [' + (e.code || 'unknown') + '] ' + e.message);
+    errEl.style.color = '#f44336';
     btn.disabled = false;
     btn.textContent = '🔐 เข้าสู่ระบบ';
   }
@@ -3100,7 +3172,7 @@ function printReport() {
       <input type="password" id="auth-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button class="auth-submit" onclick="doLogin()">🔐 เข้าสู่ระบบ</button>
-    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-error" id="auth-error" style="font-size:.85rem;line-height:1.5"></div>
   </div>
 </div>
 
