@@ -504,7 +504,7 @@
   <!-- Company Header -->
   <div class="form-company-header">
     <div style="display:flex;align-items:center;gap:16px">
-      <div style="height:80px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:8px;padding:0 24px;color:var(--accent2);font-weight:700;font-size:1.1rem;letter-spacing:1px">🏭 DEMO CO.</div>
+      <div id="form-logo-display" style="height:80px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:8px;padding:0 24px;color:var(--accent2);font-weight:700;font-size:1.1rem;letter-spacing:1px">🏭 กำลังโหลด...</div>
     </div>
     <div class="form-title-badge">NCR</div>
   </div>
@@ -733,6 +733,25 @@
     </div>
   </div>
 
+<!-- โลโก้บริษัท -->
+  <div class="card" style="margin-top:20px">
+    <div class="card-header"><div class="card-title">🏢 โลโก้บริษัท</div></div>
+    <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px">อัปโหลดโลโก้เพื่อแสดงในฟอร์ม NCR และใบพิมพ์ (แนะนำ PNG พื้นหลังใส ขนาดไม่เกิน 500KB)</p>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+      <div id="logo-preview" style="width:200px;height:80px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <span style="color:var(--text-muted);font-size:.85rem">ยังไม่มีโลโก้</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input type="file" id="logo-file-input" accept="image/*" style="color:var(--text);font-size:.85rem">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="uploadLogo()">📤 อัปโหลด</button>
+          <button class="btn btn-danger btn-sm" onclick="removeLogo()">🗑 ลบโลโก้</button>
+        </div>
+      </div>
+    </div>
+    <div id="logo-msg" style="font-size:.85rem;display:none"></div>
+  </div>
+
 <!-- ลายเซ็นดิจิตอล -->
   <div class="card" style="margin-top:20px">
     <div class="card-header"><div class="card-title">✍️ ลายเซ็นดิจิตอล</div></div>
@@ -820,13 +839,13 @@
 // ==================== FIREBASE CONFIG ====================
 // ⚠️ ใส่ค่า Firebase Config ของคุณที่นี่ (ดูจาก Firebase Console > Project Settings)
 const firebaseConfig = {
-  apiKey: "AIzaSyCb-JFiYTbT2SufhimZZfxsLvsHq_t9wZQ",
-  authDomain: "wann-ncr.firebaseapp.com",
-  databaseURL: "https://wann-ncr-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "wann-ncr",
-  storageBucket: "wann-ncr.firebasestorage.app",
-  messagingSenderId: "276399609294",
-  appId: "1:276399609294:web:4847026f9292768f0ec79f"
+  apiKey:            "PASTE_YOUR_API_KEY",
+  authDomain:        "PASTE_YOUR_PROJECT.firebaseapp.com",
+  databaseURL:       "https://PASTE_YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "PASTE_YOUR_PROJECT",
+  storageBucket:     "PASTE_YOUR_PROJECT.appspot.com",
+  messagingSenderId: "PASTE_YOUR_SENDER_ID",
+  appId:             "PASTE_YOUR_APP_ID"
 };
 
 // ==================== FIREBASE INIT (with error handling) ====================
@@ -892,6 +911,16 @@ let uploadedImages = [];
 let currentPrintData = null;
 let signatures = {};
 let BP_NAMES = [];
+let companyLogo = ''; // base64 data URL ของโลโก้บริษัท
+
+// Helper: สร้าง HTML สำหรับโลโก้
+function getLogoHTML(forPrint) {
+  if (companyLogo) {
+    const bg = forPrint ? '#fff' : 'var(--surface2)';
+    return '<img src="' + companyLogo + '" style="max-height:75px;max-width:200px;object-fit:contain" alt="Logo">';
+  }
+  return '<span style="color:' + (forPrint ? '#999' : 'var(--accent2)') + ';font-weight:700;font-size:1.1rem">🏭 อัปโหลดโลโก้ในตั้งค่า</span>';
+}
 
 // ==================== DATABASE REFERENCES ====================
 const dbRef = {
@@ -901,6 +930,7 @@ const dbRef = {
   bpNames:       () => db.ref('ncr_system/bp_names'),
   supplierReply: (id) => db.ref('ncr_system/supplier_reply/' + id.replace(/\//g, '_')),
   signatures:    () => db.ref('ncr_system/signatures'),
+  companyLogo:   () => db.ref('ncr_system/company_logo'),
 };
 
 // ==================== INIT ====================
@@ -1033,6 +1063,13 @@ async function loadData() {
         Object.keys(sig).forEach(k => { signatures[k.replace(/_SIG_/g,' ')] = sig[k]; });
       }
     }
+
+    // โหลดโลโก้บริษัท
+    const logoSnap = await dbRef.companyLogo().once('value');
+    if (logoSnap.exists() && logoSnap.val()) {
+      companyLogo = logoSnap.val();
+    }
+    updateLogoDisplay();
 
     // Merge supplier replies เข้า ncrList
     ncrList.forEach((ncr, idx) => {
@@ -1184,6 +1221,56 @@ function importMasterData() {
     }
   };
   input.click();
+}
+
+// ==================== COMPANY LOGO ====================
+function updateLogoDisplay() {
+  // อัปเดตโลโก้ทั้งในฟอร์มและ Settings preview
+  const formEl = document.getElementById('form-logo-display');
+  if (formEl) formEl.innerHTML = getLogoHTML(false);
+
+  const previewEl = document.getElementById('logo-preview');
+  if (previewEl) {
+    previewEl.innerHTML = companyLogo
+      ? '<img src="' + companyLogo + '" style="max-height:75px;max-width:195px;object-fit:contain">'
+      : '<span style="color:var(--text-muted);font-size:.85rem">ยังไม่มีโลโก้</span>';
+  }
+}
+
+function uploadLogo() {
+  const fileInput = document.getElementById('logo-file-input');
+  const msgEl = document.getElementById('logo-msg');
+  const file = fileInput.files[0];
+
+  if (!file) { msgEl.style.display = 'block'; msgEl.style.color = '#ff9800'; msgEl.textContent = 'กรุณาเลือกไฟล์รูปภาพ'; return; }
+  if (!file.type.startsWith('image/')) { msgEl.style.display = 'block'; msgEl.style.color = '#f44336'; msgEl.textContent = 'รองรับเฉพาะไฟล์รูปภาพ'; return; }
+  if (file.size > 500 * 1024) { msgEl.style.display = 'block'; msgEl.style.color = '#f44336'; msgEl.textContent = 'ไฟล์ใหญ่เกิน 500KB — กรุณาลดขนาด'; return; }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    companyLogo = e.target.result;
+    updateLogoDisplay();
+    // บันทึกขึ้น Firebase
+    if (db) dbRef.companyLogo().set(companyLogo);
+    fileInput.value = '';
+    msgEl.style.display = 'block';
+    msgEl.style.color = '#4caf50';
+    msgEl.textContent = '✅ อัปโหลดโลโก้สำเร็จ';
+    setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeLogo() {
+  if (!confirm('ลบโลโก้บริษัท?')) return;
+  companyLogo = '';
+  updateLogoDisplay();
+  if (db) dbRef.companyLogo().remove();
+  const msgEl = document.getElementById('logo-msg');
+  msgEl.style.display = 'block';
+  msgEl.style.color = '#ff9800';
+  msgEl.textContent = '🗑 ลบโลโก้แล้ว';
+  setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
 }
 
 // Connection status
@@ -2058,7 +2145,7 @@ function buildNCRFormHTML(n) {
   <table style="width:100%;border-collapse:collapse;margin-bottom:0">
     <tr>
       <td style="width:28%;vertical-align:middle;padding:8px 10px;border:1px solid #333;border-right:none;background:#fff">
-        <div style="height:80px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:8px;padding:0 24px;color:var(--accent2);font-weight:700;font-size:1.1rem;letter-spacing:1px">🏭 DEMO CO.</div>
+        <div style="height:80px;display:flex;align-items:center;justify-content:center;border-radius:8px;padding:0 24px">${getLogoHTML(true)}</div>
       </td>
       <td style="width:44%;text-align:center;vertical-align:middle;padding:8px 10px;border:1px solid #333;border-left:none">
         <div style="font-size:14px;font-weight:700">ใบรายงานสิ่งที่ไม่เป็นไปตามข้อกำหนด</div>
@@ -2342,7 +2429,7 @@ function buildNCRFormHTML(n) {
   <table style="width:100%;border-collapse:collapse;margin-bottom:0">
     <tr>
       <td style="width:28%;vertical-align:middle;padding:8px 10px;border:1px solid #333;background:#fff">
-        <div style="height:80px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:8px;padding:0 24px;color:var(--accent2);font-weight:700;font-size:1.1rem;letter-spacing:1px">🏭 DEMO CO.</div>
+        <div style="height:80px;display:flex;align-items:center;justify-content:center;border-radius:8px;padding:0 24px">${getLogoHTML(true)}</div>
       </td>
       <td style="width:44%;text-align:center;vertical-align:middle;padding:8px 10px;border:1px solid #333;border-left:none">
         <div style="font-size:14px;font-weight:700">ใบรายงานสิ่งที่ไม่เป็นไปตามข้อกำหนด</div>
