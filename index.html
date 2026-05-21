@@ -1267,6 +1267,10 @@ async function loadData() {
     if (sSnap.exists()) {
       const s = sSnap.val();
       if (s && typeof s === 'object') settings = Object.assign({}, settings, s);
+      // normalize: ถ้า productCodes มี name แต่ไม่มี desc → ย้ายไป desc
+      if (Array.isArray(settings.productCodes)) {
+        settings.productCodes.forEach(p => { if (!p.desc && p.name) { p.desc = p.name; delete p.name; } });
+      }
     }
 
     // โหลด NCR list
@@ -1436,8 +1440,15 @@ function importMasterData() {
       const wsPC = wb.Sheets['productCodes'];
       if (wsPC) {
         const pcRows = XLSX.utils.sheet_to_json(wsPC);
-        const codes = pcRows.filter(r => r.code).map(r => ({code: String(r.code).trim(), desc: r.name ? String(r.name).trim() : (r.desc ? String(r.desc).trim() : '')}));
-        if (codes.length) { settings.productCodes = codes; importCount++; }
+        const incoming = pcRows.filter(r => r.code).map(r => ({code: String(r.code).trim(), desc: r.name ? String(r.name).trim() : (r.desc ? String(r.desc).trim() : '')}));
+        if (incoming.length) {
+          incoming.forEach(ic => {
+            const ex = settings.productCodes.find(p => p.code === ic.code);
+            if (ex) { if (ic.desc) ex.desc = ic.desc; }
+            else { settings.productCodes.push(ic); }
+          });
+          importCount++;
+        }
       }
 
       // Sheet: suppliers
@@ -2872,14 +2883,18 @@ async function addProductCode() {
   const code = document.getElementById('add-code').value.trim();
   const desc = document.getElementById('add-code-desc').value.trim();
   if (!code) return;
-  if (!settings.productCodes.find(p=>p.code===code)) {
+  const existing = settings.productCodes.find(p=>p.code===code);
+  if (existing) {
+    if (desc) { existing.desc = desc; }
+    else return;
+  } else {
     settings.productCodes.push({code, desc});
-    saveData();
-    document.getElementById('add-code').value = '';
-    document.getElementById('add-code-desc').value = '';
-    renderSettings(); showSaveAlert();
-    setupProductAutocomplete();
   }
+  saveData();
+  document.getElementById('add-code').value = '';
+  document.getElementById('add-code-desc').value = '';
+  renderSettings(); showSaveAlert();
+  setupProductAutocomplete();
 }
 
 async function removeCode(i) {
