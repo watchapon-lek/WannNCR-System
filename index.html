@@ -1304,28 +1304,32 @@ async function loadData() {
     }
     updateLogoDisplay();
 
-    // Merge supplier replies เข้า ncrList
-    const replySnap = await db.ref('ncr_system/supplier_reply').once('value');
-    if (replySnap.exists()) {
-      const replies = replySnap.val();
-      ncrList.forEach((ncr, idx) => {
+    // Merge supplier replies เข้า ncrList (อ่านทีละรายการเพื่อไม่ติด Firebase Rules)
+    try {
+      const mergePromises = ncrList.map(async (ncr, idx) => {
         if (!ncr || !ncr.id) return;
-        const key = ncr.id.replace(/\//g, '_');
-        if (replies[key]) {
-          const r = replies[key];
-          if (r.supplierReply && !ncr.supplierReply)           ncrList[idx].supplierReply      = r.supplierReply;
-          if (r.supplierCA && !ncr.supplierCA)                 ncrList[idx].supplierCA         = r.supplierCA;
-          if (r.supplierPreventive && !ncr.supplierPreventive) ncrList[idx].supplierPreventive = r.supplierPreventive;
-          if (r.supplierReplyDate && !ncr.supplierReplyDate)   ncrList[idx].supplierReplyDate  = r.supplierReplyDate;
-          if (r.supplierPerson && !ncr.supplierPerson)         ncrList[idx].supplierPerson     = r.supplierPerson;
-          if (r.supplierPosition && !ncr.supplierPosition)     ncrList[idx].supplierPosition   = r.supplierPosition;
-          if (r.actionStartDate && !ncr.actionStartDate)       ncrList[idx].actionStartDate    = r.actionStartDate;
-          if (r.actionDuration && !ncr.actionDuration)         ncrList[idx].actionDuration     = r.actionDuration;
-          if (r.auditDueDate && !ncr.auditDueDate)             ncrList[idx].auditDueDate       = r.auditDueDate;
-          if (r.fixAcknowledgeDate && !ncr.fixAcknowledgeDate) ncrList[idx].fixAcknowledgeDate = r.fixAcknowledgeDate;
+        // อ่านเฉพาะ NCR ที่สถานะบ่งว่า supplier ตอบแล้ว แต่ยังไม่มีข้อมูลใน ncrList
+        if ((ncr.status === 'waiting-audit' || ncr.status === 'closed') && !ncr.supplierReply) {
+          try {
+            const rSnap = await dbRef.supplierReply(ncr.id).once('value');
+            if (rSnap.exists()) {
+              const r = rSnap.val();
+              if (r.supplierReply)      ncrList[idx].supplierReply      = r.supplierReply;
+              if (r.supplierCA)         ncrList[idx].supplierCA         = r.supplierCA;
+              if (r.supplierPreventive) ncrList[idx].supplierPreventive = r.supplierPreventive;
+              if (r.supplierReplyDate)  ncrList[idx].supplierReplyDate  = r.supplierReplyDate;
+              if (r.supplierPerson)     ncrList[idx].supplierPerson     = r.supplierPerson;
+              if (r.supplierPosition)   ncrList[idx].supplierPosition   = r.supplierPosition;
+              if (r.actionStartDate)    ncrList[idx].actionStartDate    = r.actionStartDate;
+              if (r.actionDuration)     ncrList[idx].actionDuration     = r.actionDuration;
+              if (r.auditDueDate)       ncrList[idx].auditDueDate       = r.auditDueDate;
+              if (r.fixAcknowledgeDate) ncrList[idx].fixAcknowledgeDate = r.fixAcknowledgeDate;
+            }
+          } catch(e) { console.warn('Merge reply for ' + ncr.id + ':', e.message); }
         }
       });
-    }
+      await Promise.all(mergePromises);
+    } catch(e) { console.warn('Merge supplier replies skipped:', e.message); }
 
   } catch(e) {
     console.error('loadData (Firebase) error:', e);
