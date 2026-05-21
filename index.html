@@ -1431,7 +1431,7 @@ function importMasterData() {
       const wsPC = wb.Sheets['productCodes'];
       if (wsPC) {
         const pcRows = XLSX.utils.sheet_to_json(wsPC);
-        const codes = pcRows.filter(r => r.code).map(r => ({code: String(r.code).trim(), name: r.name ? String(r.name).trim() : ''}));
+        const codes = pcRows.filter(r => r.code).map(r => ({code: String(r.code).trim(), desc: r.name ? String(r.name).trim() : (r.desc ? String(r.desc).trim() : '')}));
         if (codes.length) { settings.productCodes = codes; importCount++; }
       }
 
@@ -1675,7 +1675,7 @@ function setupProductAutocomplete() {
     list.innerHTML = '';
     selectedIdx = -1;
     if (!q) { list.classList.remove('show'); return; }
-    const matches = settings.productCodes.filter(p => p.code.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)).slice(0, 30);
+    const matches = settings.productCodes.filter(p => p.code.toLowerCase().includes(q) || (p.desc||'').toLowerCase().includes(q)).slice(0, 30);
     if (!matches.length) { list.classList.remove('show'); return; }
     matches.forEach(p => {
       const div = document.createElement('div');
