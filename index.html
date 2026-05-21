@@ -996,13 +996,18 @@
 
   <!-- Product Codes -->
   <div class="card">
-    <div class="card-header"><div class="card-title">📦 รหัสสินค้า SAP (Column F)</div></div>
+    <div class="card-header">
+      <div class="card-title">📦 รหัสสินค้า SAP (Column F)</div>
+      <button class="btn btn-sm" onclick="const w=document.getElementById('codes-wrap');const b=this;if(w.style.display==='none'){w.style.display='block';b.textContent='▲ ซ่อน';}else{w.style.display='none';b.textContent='▼ แสดง ('+settings.productCodes.length+')';}" id="codes-toggle" style="font-size:.78rem;padding:5px 12px">▼ แสดง</button>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
       <input type="text" id="add-code" placeholder="รหัสสินค้า" style="max-width:180px">
       <input type="text" id="add-code-desc" placeholder="ชื่อสินค้า" style="max-width:300px">
       <button class="btn btn-primary btn-sm" onclick="addProductCode()">+ เพิ่ม</button>
     </div>
-    <div class="tag-list" id="codes-list"></div>
+    <div id="codes-wrap" style="display:none">
+      <div class="tag-list" id="codes-list"></div>
+    </div>
   </div>
 
   <div id="save-alert" class="alert alert-success" style="display:none">✅ บันทึกการตั้งค่าเรียบร้อย</div>
@@ -2828,6 +2833,7 @@ function renderSettings() {
   // Codes
   document.getElementById('codes-list').innerHTML = settings.productCodes.map((p,i) =>
     `<div class="tag"><span style="font-family:monospace;color:var(--accent3)">${p.code}</span>&nbsp;${p.desc?`<span style="color:var(--text-muted)">${p.desc}</span>`:''}<span class="del-tag" onclick="removeCode(${i})">✕</span></div>`).join('');
+  const _ct=document.getElementById('codes-toggle');if(_ct&&document.getElementById('codes-wrap').style.display==='none')_ct.textContent='▼ แสดง ('+settings.productCodes.length+')';
   // Signatures
   renderSigList();
 }
