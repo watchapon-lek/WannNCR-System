@@ -629,6 +629,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -1009,15 +1010,16 @@
   <!-- DATA MANAGEMENT -->
   <div class="card" style="margin-top:20px;border:1px solid var(--accent)">
     <div class="card-header"><div class="card-title">📂 จัดการข้อมูล Master Data</div></div>
-    <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px">Import ข้อมูลจริง (ผู้รายงาน, ผู้ทบทวน, แผนก, รหัสสินค้า, รายชื่อ Supplier) จากไฟล์ JSON หรือ Export สำรองข้อมูลทั้งหมด</p>
+    <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px">Import ข้อมูลจริง (ผู้รายงาน, ผู้ทบทวน, แผนก, รหัสสินค้า, รายชื่อ Supplier) จากไฟล์ Excel หรือ Export สำรองข้อมูลทั้งหมด</p>
     <div class="btn-row" style="margin-bottom:16px">
-      <button class="btn btn-success btn-sm" onclick="importMasterData()">📥 Import JSON</button>
+      <button class="btn btn-success btn-sm" onclick="downloadMasterTemplate()">📋 ดาวน์โหลด Template Excel</button>
+      <button class="btn btn-success btn-sm" onclick="importMasterData()">📥 Import Excel</button>
       <button class="btn btn-info btn-sm" onclick="exportMasterData()">📤 Export Backup</button>
     </div>
     <div style="background:var(--surface2);border-radius:8px;padding:14px;font-size:.83rem;color:var(--text-muted)">
       <strong style="color:var(--accent2)">วิธีใช้:</strong><br>
-      1. ดาวน์โหลด Template JSON → กรอกข้อมูลจริงลงไป<br>
-      2. กด <strong>Import JSON</strong> → เลือกไฟล์ที่กรอกแล้ว<br>
+      1. กด <strong>ดาวน์โหลด Template Excel</strong> → กรอกข้อมูลจริงลงในแต่ละ Sheet<br>
+      2. กด <strong>Import Excel</strong> → เลือกไฟล์ที่กรอกแล้ว<br>
       3. ข้อมูลจะถูกบันทึกขึ้น Firebase Cloud โดยอัตโนมัติ<br>
       4. กด <strong>Export Backup</strong> เป็นประจำเพื่อสำรองข้อมูล
     </div>
@@ -1061,13 +1063,13 @@
 // ==================== FIREBASE CONFIG ====================
 // ⚠️ ใส่ค่า Firebase Config ของคุณที่นี่ (ดูจาก Firebase Console > Project Settings)
 const firebaseConfig = {
-  apiKey: "AIzaSyCb-JFiYTbT2SufhimZZfxsLvsHq_t9wZQ",
-  authDomain: "wann-ncr.firebaseapp.com",
-  databaseURL: "https://wann-ncr-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "wann-ncr",
-  storageBucket: "wann-ncr.firebasestorage.app",
-  messagingSenderId: "276399609294",
-  appId: "1:276399609294:web:4847026f9292768f0ec79f"
+  apiKey:            "PASTE_YOUR_API_KEY",
+  authDomain:        "PASTE_YOUR_PROJECT.firebaseapp.com",
+  databaseURL:       "https://PASTE_YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "PASTE_YOUR_PROJECT",
+  storageBucket:     "PASTE_YOUR_PROJECT.appspot.com",
+  messagingSenderId: "PASTE_YOUR_SENDER_ID",
+  appId:             "PASTE_YOUR_APP_ID"
 };
 
 // ==================== FIREBASE INIT (with error handling) ====================
@@ -1396,53 +1398,85 @@ function exportMasterData() {
 function importMasterData() {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = '.json';
+  input.accept = '.xlsx,.xls';
   input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const text = await file.text();
-      const data = JSON.parse(text);
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data, {type:'array'});
       let importCount = 0;
 
-      if (data.settings) {
-        if (Array.isArray(data.settings.reporters) && data.settings.reporters.length) {
-          settings.reporters = data.settings.reporters.filter(r => typeof r === 'string' && r.trim());
-          importCount++;
-        }
-        if (Array.isArray(data.settings.reviewers) && data.settings.reviewers.length) {
-          settings.reviewers = data.settings.reviewers.filter(r => typeof r === 'string' && r.trim());
-          importCount++;
-        }
-        if (Array.isArray(data.settings.depts) && data.settings.depts.length) {
-          settings.depts = data.settings.depts.filter(d => typeof d === 'string' && d.trim());
-          importCount++;
-        }
-        if (Array.isArray(data.settings.productCodes) && data.settings.productCodes.length) {
-          settings.productCodes = data.settings.productCodes.filter(p => p && p.code);
-          importCount++;
-        }
+      // Helper: read column A from a sheet as string array (skip header row 1)
+      const readCol = (sheetName) => {
+        const ws = wb.Sheets[sheetName];
+        if (!ws) return null;
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+        return rows.slice(1).map(r => (r[0] != null ? String(r[0]).trim() : '')).filter(v => v);
+      };
+
+      // Sheet: reporters
+      const reporters = readCol('reporters');
+      if (reporters && reporters.length) { settings.reporters = reporters; importCount++; }
+
+      // Sheet: reviewers
+      const reviewers = readCol('reviewers');
+      if (reviewers && reviewers.length) { settings.reviewers = reviewers; importCount++; }
+
+      // Sheet: depts
+      const depts = readCol('depts');
+      if (depts && depts.length) { settings.depts = depts; importCount++; }
+
+      // Sheet: productCodes (columns: code, name)
+      const wsPC = wb.Sheets['productCodes'];
+      if (wsPC) {
+        const pcRows = XLSX.utils.sheet_to_json(wsPC);
+        const codes = pcRows.filter(r => r.code).map(r => ({code: String(r.code).trim(), name: r.name ? String(r.name).trim() : ''}));
+        if (codes.length) { settings.productCodes = codes; importCount++; }
       }
-      if (Array.isArray(data.suppliers) && data.suppliers.length) {
-        BP_NAMES = data.suppliers.filter(s => typeof s === 'string' && s.trim());
+
+      // Sheet: suppliers
+      const suppliers = readCol('suppliers');
+      if (suppliers && suppliers.length) {
+        BP_NAMES = suppliers;
         setupAutocomplete('bp-input', 'bp-list', BP_NAMES, v => v, 200);
         importCount++;
-      }
-      if (Array.isArray(data.ncrList) && data.ncrList.length) {
-        if (confirm('พบข้อมูล NCR ' + data.ncrList.length + ' รายการ ต้องการ Import ด้วยหรือไม่?\n\n⚠️ ข้อมูล NCR เดิมจะถูกแทนที่')) {
-          ncrList = data.ncrList.filter(n => n && n.id);
-          importCount++;
-        }
       }
 
       saveData();
       renderSettings(); populateSelects(); renderList(); updateDashboard();
-      showAlert('✅ Import สำเร็จ — ' + importCount + ' หมวดข้อมูล → บันทึกขึ้น Firebase แล้ว');
+      showAlert('✅ Import Excel สำเร็จ — ' + importCount + ' หมวดข้อมูล → บันทึกขึ้น Firebase แล้ว');
     } catch(err) {
-      alert('❌ ไฟล์ JSON ไม่ถูกต้อง: ' + err.message);
+      alert('❌ ไฟล์ Excel ไม่ถูกต้อง: ' + err.message);
     }
   };
   input.click();
+}
+
+function downloadMasterTemplate() {
+  const wb = XLSX.utils.book_new();
+
+  // Sheet: reporters
+  const wsR = XLSX.utils.aoa_to_sheet([['ชื่อผู้รายงาน'],['ตัวอย่าง: สมชาย ใจดี']]);
+  XLSX.utils.book_append_sheet(wb, wsR, 'reporters');
+
+  // Sheet: reviewers
+  const wsV = XLSX.utils.aoa_to_sheet([['ชื่อผู้ทบทวน'],['ตัวอย่าง: สมหญิง รักงาน']]);
+  XLSX.utils.book_append_sheet(wb, wsV, 'reviewers');
+
+  // Sheet: depts
+  const wsD = XLSX.utils.aoa_to_sheet([['ชื่อแผนก'],['ตัวอย่าง: QC'],['ตัวอย่าง: Production']]);
+  XLSX.utils.book_append_sheet(wb, wsD, 'depts');
+
+  // Sheet: productCodes
+  const wsP = XLSX.utils.aoa_to_sheet([['code','name'],['SKU-001','ตัวอย่าง: ครีมบำรุงผิว']]);
+  XLSX.utils.book_append_sheet(wb, wsP, 'productCodes');
+
+  // Sheet: suppliers
+  const wsS = XLSX.utils.aoa_to_sheet([['ชื่อ Supplier'],['ตัวอย่าง: บริษัท ABC จำกัด']]);
+  XLSX.utils.book_append_sheet(wb, wsS, 'suppliers');
+
+  XLSX.writeFile(wb, 'MasterData_Template.xlsx');
 }
 
 // ==================== COMPANY LOGO ====================
