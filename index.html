@@ -1305,10 +1305,27 @@ async function loadData() {
     updateLogoDisplay();
 
     // Merge supplier replies เข้า ncrList
-    ncrList.forEach((ncr, idx) => {
-      if (!ncr || !ncr.id) return;
-    });
-    // Supplier replies ถูก merge ผ่าน real-time listener แทน
+    const replySnap = await db.ref('ncr_system/supplier_reply').once('value');
+    if (replySnap.exists()) {
+      const replies = replySnap.val();
+      ncrList.forEach((ncr, idx) => {
+        if (!ncr || !ncr.id) return;
+        const key = ncr.id.replace(/\//g, '_');
+        if (replies[key]) {
+          const r = replies[key];
+          if (r.supplierReply && !ncr.supplierReply)           ncrList[idx].supplierReply      = r.supplierReply;
+          if (r.supplierCA && !ncr.supplierCA)                 ncrList[idx].supplierCA         = r.supplierCA;
+          if (r.supplierPreventive && !ncr.supplierPreventive) ncrList[idx].supplierPreventive = r.supplierPreventive;
+          if (r.supplierReplyDate && !ncr.supplierReplyDate)   ncrList[idx].supplierReplyDate  = r.supplierReplyDate;
+          if (r.supplierPerson && !ncr.supplierPerson)         ncrList[idx].supplierPerson     = r.supplierPerson;
+          if (r.supplierPosition && !ncr.supplierPosition)     ncrList[idx].supplierPosition   = r.supplierPosition;
+          if (r.actionStartDate && !ncr.actionStartDate)       ncrList[idx].actionStartDate    = r.actionStartDate;
+          if (r.actionDuration && !ncr.actionDuration)         ncrList[idx].actionDuration     = r.actionDuration;
+          if (r.auditDueDate && !ncr.auditDueDate)             ncrList[idx].auditDueDate       = r.auditDueDate;
+          if (r.fixAcknowledgeDate && !ncr.fixAcknowledgeDate) ncrList[idx].fixAcknowledgeDate = r.fixAcknowledgeDate;
+        }
+      });
+    }
 
   } catch(e) {
     console.error('loadData (Firebase) error:', e);
@@ -1345,11 +1362,27 @@ function saveData() {
 function saveSupplierReplyToPath(ncrId, data) {
   try {
     dbRef.supplierReply(ncrId).update(data);
-    // อัปเดต status ใน NCR list ด้วย
-    dbRef.ncrItem(ncrId).update({
+    // อัปเดต status + ข้อมูลตอบกลับใน NCR list ด้วย เพื่อให้ admin เห็นข้อมูลทันที
+    const ncrUpdate = {
       status: data.status || 'waiting-audit',
       updatedAt: data.updatedAt || new Date().toISOString()
-    });
+    };
+    if (data.supplierReply !== undefined)      ncrUpdate.supplierReply      = data.supplierReply;
+    if (data.supplierCA !== undefined)         ncrUpdate.supplierCA         = data.supplierCA;
+    if (data.supplierPreventive !== undefined) ncrUpdate.supplierPreventive = data.supplierPreventive;
+    if (data.supplierReplyDate !== undefined)  ncrUpdate.supplierReplyDate  = data.supplierReplyDate;
+    if (data.supplierPerson !== undefined)     ncrUpdate.supplierPerson     = data.supplierPerson;
+    if (data.supplierPosition !== undefined)   ncrUpdate.supplierPosition   = data.supplierPosition;
+    if (data.actionStartDate !== undefined)    ncrUpdate.actionStartDate    = data.actionStartDate;
+    if (data.actionDuration !== undefined)     ncrUpdate.actionDuration     = data.actionDuration;
+    if (data.auditDueDate !== undefined)       ncrUpdate.auditDueDate       = data.auditDueDate;
+    if (data.fixAcknowledgeDate !== undefined) ncrUpdate.fixAcknowledgeDate = data.fixAcknowledgeDate;
+    if (data.actionReturn !== undefined)       ncrUpdate.actionReturn       = data.actionReturn;
+    if (data.actionSpecial !== undefined)      ncrUpdate.actionSpecial      = data.actionSpecial;
+    if (data.actionRework !== undefined)       ncrUpdate.actionRework       = data.actionRework;
+    if (data.actionDestroy !== undefined)      ncrUpdate.actionDestroy      = data.actionDestroy;
+    if (data.actionOther !== undefined)        ncrUpdate.actionOther        = data.actionOther;
+    dbRef.ncrItem(ncrId).update(ncrUpdate);
     return true;
   } catch(e) {
     console.error('saveSupplierReplyToPath (Firebase) error:', e);
@@ -3203,7 +3236,7 @@ function printReport() {
     if (mode === 'reply' && ncrId) {
         const replyStyle = document.createElement('style');
         replyStyle.innerHTML = `
-            .topnav, .stats-grid, .nav-tabs, .btn-row, #page-ncr-list, #page-settings, #page-dashboard, .page-title, .page-subtitle { display: none !important; }
+            .topnav, .stats-grid, .nav-tabs, .btn-row, #page-ncr-list, #page-settings, #page-dashboard, .page-title, .page-subtitle, .form-company-header { display: none !important; }
             #page-new-ncr { display: block !important; padding-top: 20px !important; }
             #page-new-ncr .card { display: none !important; }
             .no-reply { display: none !important; }
